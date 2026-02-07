@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion Astreintes SOC</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: #f5f5f5;
+            border: none;
+            font-size: 1em;
+            font-weight: 600;
+            color: #555;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: white;
+            color: #2a5298;
+            border-bottom: 3px solid #2a5298;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #2a5298;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.3);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .astreinte-card {
+            background: #f8f9fa;
+            border-left: 4px solid #2a5298;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .astreinte-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .astreinte-card.active {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .astreinte-card.upcoming {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .astreinte-card.past {
+            border-left-color: #6c757d;
+            background: #e9ecef;
+            opacity: 0.7;
+        }
+
+        .astreinte-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .astreinte-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .astreinte-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-upcoming {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .status-past {
+            background: #6c757d;
+            color: white;
+        }
+
+        .astreinte-details {
+            margin: 10px 0;
+            color: #555;
+        }
+
+        .astreinte-details p {
+            margin: 5px 0;
+        }
+
+        .astreinte-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .incident-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .incident-item.resolved {
+            border-left-color: #28a745;
+            opacity: 0.7;
+        }
+
+        .incident-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .incident-severity {
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .severity-critical {
+            background: #dc3545;
+            color: white;
+        }
+
+        .severity-high {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .severity-medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .severity-low {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .calendar-view {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .recuperation-card {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .recuperation-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        @media (max-width: 768px) {
+            .astreinte-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .astreinte-actions {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Gestion des Astreintes SOC</h1>
+            <p>Planifiez et suivez vos périodes d'astreinte</p>
+            <div id="autoBackupIndicator" style="display: none; margin-top: 10px; padding: 8px 15px; background: rgba(255,255,255,0.2); border-radius: 20px; display: inline-block; font-size: 0.9em;">
+                <span style="color: #28a745; font-weight: 600;">●</span> Sauvegarde automatique active
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn" onclick="showExportMenu()" style="background: white; color: #2a5298; padding: 10px 20px;">
+                    📥 Exporter les données
+                </button>
+                <button class="btn" onclick="document.getElementById('importFile').click()" style="background: white; color: #2a5298; padding: 10px 20px; margin-left: 10px;">
+                    📤 Importer les données
+                </button>
+                <button class="btn" onclick="showSettingsMenu()" style="background: white; color: #2a5298; padding: 10px 20px; margin-left: 10px;">
+                    ⚙️ Paramètres
+                </button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+            </div>
+            <div id="exportMenu" style="display: none; margin-top: 15px; background: white; padding: 15px; border-radius: 8px; max-width: 300px; margin-left: auto; margin-right: auto;">
+                <p style="color: #333; font-weight: 600; margin-bottom: 10px;">Choisissez le format :</p>
+                <button class="btn btn-primary" onclick="exportData(); hideExportMenu();" style="width: 100%; margin-bottom: 8px;">
+                    📄 JSON (sauvegarde complète)
+                </button>
+                <button class="btn btn-success" onclick="exportToCSV(); hideExportMenu();" style="width: 100%; margin-bottom: 8px;">
+                    📊 CSV (pour Excel)
+                </button>
+                <button class="btn" onclick="hideExportMenu()" style="background: #6c757d; color: white; width: 100%;">
+                    Annuler
+                </button>
+            </div>
+            <div id="settingsMenu" style="display: none; margin-top: 15px; background: white; padding: 20px; border-radius: 8px; max-width: 400px; margin-left: auto; margin-right: auto; color: #333;">
+                <h3 style="margin-bottom: 15px; color: #2a5298;">⚙️ Paramètres de sauvegarde</h3>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: 600;">
+                        <input type="checkbox" id="autoBackupEnabled" onchange="toggleAutoBackup()" style="width: auto; margin-right: 10px; cursor: pointer;">
+                        <span>Activer la sauvegarde automatique</span>
+                    </label>
+                </div>
+
+                <div id="autoBackupOptions" style="display: none; margin-left: 25px; margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Fréquence de sauvegarde :</label>
+                    <select id="backupFrequency" onchange="updateBackupFrequency()" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                        <option value="daily">Quotidienne</option>
+                        <option value="weekly" selected>Hebdomadaire</option>
+                        <option value="monthly">Mensuelle</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">La sauvegarde se fera automatiquement en arrière-plan</small>
+                </div>
+
+                <div id="lastBackupInfo" style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9em;">
+                    <strong>Dernière sauvegarde :</strong> <span id="lastBackupDate">Aucune</span>
+                </div>
+
+                <button class="btn btn-success" onclick="manualBackup()" style="width: 100%; margin-bottom: 8px;">
+                    💾 Sauvegarder maintenant
+                </button>
+                <button class="btn" onclick="restoreFromAutoBackup()" style="background: #17a2b8; color: white; width: 100%; margin-bottom: 8px;">
+                    🔄 Restaurer la sauvegarde auto
+                </button>
+                <button class="btn" onclick="hideSettingsMenu()" style="background: #6c757d; color: white; width: 100%;">
+                    Fermer
+                </button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">📊 Tableau de bord</button>
+            <button class="tab" onclick="switchTab('astreintes')">📅 Mes Astreintes</button>
+            <button class="tab" onclick="switchTab('recuperation')">🏖️ Récupération</button>
+            <button class="tab" onclick="switchTab('incidents')">🚨 Incidents</button>
+            <button class="tab" onclick="switchTab('nouvelle')">➕ Nouvelle Astreinte</button>
+        </div>
+
+        <div class="content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <h2 style="margin-bottom: 20px;">Tableau de bord</h2>
+                <div class="stats-grid" id="statsGrid"></div>
+                <div id="currentAstreinte"></div>
+            </div>
+
+            <!-- Astreintes Tab -->
+            <div id="astreintes" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Liste des Astreintes</h2>
+                <div id="astreintesList"></div>
+            </div>
+
+            <!-- Récupération Tab -->
+            <div id="recuperation" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Gestion des Jours de Récupération</h2>
+                
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; text-align: center;">
+                        <div>
+                            <div style="font-size: 2.5em; font-weight: 700;" id="totalRecupDisplay">0</div>
+                            <div style="opacity: 0.9;">Total acquis</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2.5em; font-weight: 700; color: #ffc107;" id="prisRecupDisplay">0</div>
+                            <div style="opacity: 0.9;">Jours pris</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2.5em; font-weight: 700; color: #28a745;" id="restantRecupDisplay">0</div>
+                            <div style="opacity: 0.9;">Disponibles</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-success" onclick="showRecuperationForm()">➕ Déclarer des jours pris</button>
+                </div>
+
+                <div id="recuperationForm" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">Déclarer des jours de récupération pris</h3>
+                    <div class="form-group">
+                        <label>Date de début *</label>
+                        <input type="date" id="recuperationDateDebut" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date de fin *</label>
+                        <input type="date" id="recuperationDateFin" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre de jours *</label>
+                        <input type="number" id="recuperationJours" step="0.5" min="0.5" required placeholder="Ex: 1.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="recuperationNotes" placeholder="Raison de la prise de récupération..."></textarea>
+                    </div>
+                    <button class="btn btn-success" onclick="addRecuperation()">Enregistrer</button>
+                    <button class="btn" onclick="hideRecuperationForm()" style="background: #6c757d; color: white;">Annuler</button>
+                </div>
+
+                <div id="recuperationList"></div>
+            </div>
+
+            <!-- Incidents Tab -->
+            <div id="incidents" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Gestion des Incidents</h2>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-success" onclick="showIncidentForm()">➕ Déclarer un incident</button>
+                </div>
+                <div id="incidentForm" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">Nouveau Incident</h3>
+                    
+                    <div class="form-group">
+                        <label>Nom de l'analyste *</label>
+                        <input type="text" id="incidentAnalyste" placeholder="Ex: Jean Dupont" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date de l'incident *</label>
+                        <input type="date" id="incidentDate" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Heure de début *</label>
+                            <input type="time" id="incidentHeureDebut" onchange="calculateHeuresWithMajoration()" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Heure de fin</label>
+                            <input type="time" id="incidentHeureFin" onchange="calculateHeuresWithMajoration()">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Titre de l'incident *</label>
+                        <input type="text" id="incidentTitle" placeholder="Ex: Tentative d'intrusion détectée" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Sévérité *</label>
+                        <select id="incidentSeverity">
+                            <option value="critical">Critique</option>
+                            <option value="high">Haute</option>
+                            <option value="medium">Moyenne</option>
+                            <option value="low">Basse</option>
+                            <option value="false-positive">Faux-positif</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Heures passées sur l'incident</label>
+                        <input type="number" id="incidentHeures" step="0.1" min="0" placeholder="Calculé automatiquement">
+                        <small style="color: #666; display: block; margin-top: 5px;">Calculé automatiquement : forfait 1h si < 1h, sinon durée réelle + 30%. Modifiable manuellement.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description et détails des opérations menées</label>
+                        <textarea id="incidentDescription" placeholder="Décrivez l'incident et les opérations effectuées..." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Problèmes rencontrés / Retex</label>
+                        <textarea id="incidentRetex" placeholder="Problèmes rencontrés, retour d'expérience..." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-weight: 600; margin-bottom: 10px;">Communication</label>
+                        <select id="commSelect" multiple size="8" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                            <option value="cadreAstreinte">Cadre d'astreinte</option>
+                            <option value="dsi">DSI</option>
+                            <option value="rssi">RSSI</option>
+                            <option value="anssi">ANSSI</option>
+                            <option value="shfds">SHFDS</option>
+                            <option value="socRie">SOC RIE</option>
+                            <option value="soc">SOC</option>
+                            <option value="renater">RENATER</option>
+                        </select>
+                        <small style="color: #666; display: block; margin-top: 5px;">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs options</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Astreinte associée</label>
+                        <select id="incidentAstreinte"></select>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="addIncident()">Enregistrer</button>
+                    <button class="btn" onclick="hideIncidentForm()" style="background: #6c757d; color: white;">Annuler</button>
+                </div>
+                <div id="incidentsList"></div>
+            </div>
+
+            <!-- Nouvelle Astreinte Tab -->
+            <div id="nouvelle" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Planifier une Astreinte</h2>
+                <form onsubmit="addAstreinte(event)">
+                    <div class="form-group">
+                        <label>Nom de l'astreinte *</label>
+                        <input type="text" id="nom" required placeholder="Ex: Astreinte Semaine 6">
+                    </div>
+                    <div class="form-group">
+                        <label>Date de début *</label>
+                        <input type="datetime-local" id="dateDebut" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date de fin *</label>
+                        <input type="datetime-local" id="dateFin" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Type d'astreinte</label>
+                        <select id="type">
+                            <option value="normale">Normale</option>
+                            <option value="weekend">Week-end</option>
+                            <option value="nuit">Nuit</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="jourFerie" style="width: auto; margin-right: 10px; cursor: pointer;">
+                            <span>Inclut un jour férié (+0,5 jour de récupération)</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="notes" placeholder="Informations complémentaires..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enregistrer l'astreinte</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Stockage des données
+        let astreintes = JSON.parse(localStorage.getItem('astreintes')) || [];
+        let incidents = JSON.parse(localStorage.getItem('incidents')) || [];
+        let recuperationsPrises = JSON.parse(localStorage.getItem('recuperationsPrises')) || [];
+        
+        // Paramètres de sauvegarde automatique
+        let autoBackupSettings = JSON.parse(localStorage.getItem('autoBackupSettings')) || {
+            enabled: false,
+            frequency: 'weekly',
+            lastBackup: null
+        };
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+            updateAstreintesList();
+            updateIncidentsList();
+            updateIncidentAstreinteSelect();
+            updateRecuperationView();
+            initAutoBackup();
+            checkAutoBackup();
+        });
+
+        // Calculer les heures avec majoration de 30%
+        function calculateHeuresWithMajoration() {
+            const heureDebut = document.getElementById('incidentHeureDebut').value;
+            const heureFin = document.getElementById('incidentHeureFin').value;
+            
+            if (!heureDebut || !heureFin) return;
+            
+            const [heuresDebut, minutesDebut] = heureDebut.split(':').map(Number);
+            const [heuresFin, minutesFin] = heureFin.split(':').map(Number);
+            
+            const debut = heuresDebut * 60 + minutesDebut;
+            const fin = heuresFin * 60 + minutesFin;
+            
+            let dureeMinutes = fin - debut;
+            if (dureeMinutes < 0) {
+                dureeMinutes += 24 * 60; // Si on passe minuit
+            }
+            
+            let dureeHeures = dureeMinutes / 60;
+            let heuresFinales;
+            
+            // Si moins d'1 heure : forfait 1h sans majoration
+            if (dureeHeures < 1) {
+                heuresFinales = 1;
+            } else {
+                // Si 1 heure ou plus : majoration de 30%
+                heuresFinales = dureeHeures * 1.3;
+            }
+            
+            document.getElementById('incidentHeures').value = heuresFinales.toFixed(1);
+        }
+
+        // Gestion des onglets
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'astreintes') updateAstreintesList();
+            if (tabName === 'recuperation') updateRecuperationView();
+            if (tabName === 'incidents') updateIncidentsList();
+        }
+
+        // Ajouter une astreinte
+        function addAstreinte(event) {
+            event.preventDefault();
+            
+            const astreinte = {
+                id: Date.now(),
+                nom: document.getElementById('nom').value,
+                dateDebut: document.getElementById('dateDebut').value,
+                dateFin: document.getElementById('dateFin').value,
+                type: document.getElementById('type').value,
+                jourFerie: document.getElementById('jourFerie').checked,
+                notes: document.getElementById('notes').value,
+                createdAt: new Date().toISOString()
+            };
+
+            astreintes.push(astreinte);
+            localStorage.setItem('astreintes', JSON.stringify(astreintes));
+
+            event.target.reset();
+            alert('✅ Astreinte enregistrée avec succès !');
+            updateDashboard();
+            updateAstreintesList();
+            updateIncidentAstreinteSelect();
+        }
+
+        // Déterminer le statut d'une astreinte
+        function getAstreinteStatus(astreinte) {
+            const now = new Date();
+            const debut = new Date(astreinte.dateDebut);
+            const fin = new Date(astreinte.dateFin);
+
+            if (now >= debut && now <= fin) return 'active';
+            if (now < debut) return 'upcoming';
+            return 'past';
+        }
+
+        // Calculer les jours de récupération pour une astreinte
+        function calculateRecuperation(astreinte) {
+            const debut = new Date(astreinte.dateDebut);
+            const fin = new Date(astreinte.dateFin);
+            const dureeJours = Math.ceil((fin - debut) / (1000 * 60 * 60 * 24));
+            
+            // Base : 1,5 jours par semaine d'astreinte
+            let recuperation = (dureeJours / 7) * 1.5;
+            
+            // Bonus jour férié : +0,5 jour
+            if (astreinte.jourFerie) {
+                recuperation += 0.5;
+            }
+            
+            return Math.round(recuperation * 10) / 10; // Arrondi à 1 décimale
+        }
+
+        // Calculer le total des jours de récupération
+        function calculateTotalRecuperation() {
+            return astreintes.reduce((total, astreinte) => {
+                return total + calculateRecuperation(astreinte);
+            }, 0).toFixed(1);
+        }
+
+        // Calculer le total des jours de récupération pris
+        function calculateTotalRecuperationPrise() {
+            return recuperationsPrises.reduce((total, recup) => {
+                return total + parseFloat(recup.jours);
+            }, 0).toFixed(1);
+        }
+
+        // Calculer les jours de récupération restants
+        function calculateRecuperationRestante() {
+            const total = parseFloat(calculateTotalRecuperation());
+            const pris = parseFloat(calculateTotalRecuperationPrise());
+            return (total - pris).toFixed(1);
+        }
+
+        // Formater une date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Mettre à jour le tableau de bord
+        function updateDashboard() {
+            const now = new Date();
+            const activeAstreinte = astreintes.find(a => {
+                const debut = new Date(a.dateDebut);
+                const fin = new Date(a.dateFin);
+                return now >= debut && now <= fin;
+            });
+
+            const upcomingAstreintes = astreintes.filter(a => new Date(a.dateDebut) > now).length;
+            const totalIncidents = incidents.length;
+            const unresolvedIncidents = incidents.filter(i => !i.resolved).length;
+            const totalHeuresIncidents = incidents.reduce((total, incident) => total + (incident.heures || 0), 0).toFixed(1);
+
+            const statsHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${astreintes.length}</div>
+                    <div class="stat-label">Astreintes totales</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="stat-value">${upcomingAstreintes}</div>
+                    <div class="stat-label">À venir</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                    <div class="stat-value">${calculateRecuperationRestante()}</div>
+                    <div class="stat-label">Jours disponibles</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="stat-value">${totalIncidents}</div>
+                    <div class="stat-label">Incidents totaux</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                    <div class="stat-value">${unresolvedIncidents}</div>
+                    <div class="stat-label">Incidents en cours</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #ff9a56 0%, #ff6a00 100%);">
+                    <div class="stat-value">${totalHeuresIncidents}h</div>
+                    <div class="stat-label">Heures sur incidents</div>
+                </div>
+            `;
+
+            document.getElementById('statsGrid').innerHTML = statsHTML;
+
+            let currentHTML = '<h3 style="margin: 30px 0 15px 0;">Astreinte en cours</h3>';
+            if (activeAstreinte) {
+                const astreinteIncidents = incidents.filter(i => i.astreinteId === activeAstreinte.id);
+                const recuperation = calculateRecuperation(activeAstreinte);
+                currentHTML += `
+                    <div class="astreinte-card active">
+                        <div class="astreinte-header">
+                            <div class="astreinte-title">${activeAstreinte.nom}</div>
+                            <span class="astreinte-status status-active">🟢 En cours</span>
+                        </div>
+                        <div class="astreinte-details">
+                            <p><strong>📅 Début:</strong> ${formatDate(activeAstreinte.dateDebut)}</p>
+                            <p><strong>🏁 Fin:</strong> ${formatDate(activeAstreinte.dateFin)}</p>
+                            <p><strong>🏷️ Type:</strong> ${activeAstreinte.type}</p>
+                            <p><strong>🎁 Récupération:</strong> ${recuperation} jour${recuperation > 1 ? 's' : ''} ${activeAstreinte.jourFerie ? '(inclut jour férié)' : ''}</p>
+                            <p><strong>🚨 Incidents:</strong> ${astreinteIncidents.length} (${astreinteIncidents.filter(i => !i.resolved).length} en cours)</p>
+                            ${activeAstreinte.notes ? `<p><strong>📝 Notes:</strong> ${activeAstreinte.notes}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            } else {
+                currentHTML += `
+                    <div class="empty-state">
+                        <p style="font-size: 1.2em;">Aucune astreinte en cours</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('currentAstreinte').innerHTML = currentHTML;
+        }
+
+        // Mettre à jour la liste des astreintes
+        function updateAstreintesList() {
+            const sortedAstreintes = [...astreintes].sort((a, b) => 
+                new Date(b.dateDebut) - new Date(a.dateDebut)
+            );
+
+            if (sortedAstreintes.length === 0) {
+                document.getElementById('astreintesList').innerHTML = `
+                    <div class="empty-state">
+                        <p style="font-size: 1.2em;">Aucune astreinte planifiée</p>
+                        <p>Cliquez sur "Nouvelle Astreinte" pour en créer une</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = sortedAstreintes.map(astreinte => {
+                const status = getAstreinteStatus(astreinte);
+                const statusLabels = {
+                    active: { text: '🟢 En cours', class: 'status-active' },
+                    upcoming: { text: '🟡 À venir', class: 'status-upcoming' },
+                    past: { text: '⚫ Terminée', class: 'status-past' }
+                };
+
+                const astreinteIncidents = incidents.filter(i => i.astreinteId === astreinte.id);
+                const recuperation = calculateRecuperation(astreinte);
+
+                return `
+                    <div class="astreinte-card ${status}">
+                        <div class="astreinte-header">
+                            <div class="astreinte-title">${astreinte.nom}</div>
+                            <span class="astreinte-status ${statusLabels[status].class}">${statusLabels[status].text}</span>
+                        </div>
+                        <div class="astreinte-details">
+                            <p><strong>📅 Début:</strong> ${formatDate(astreinte.dateDebut)}</p>
+                            <p><strong>🏁 Fin:</strong> ${formatDate(astreinte.dateFin)}</p>
+                            <p><strong>🏷️ Type:</strong> ${astreinte.type}</p>
+                            <p><strong>🎁 Récupération:</strong> ${recuperation} jour${recuperation > 1 ? 's' : ''} ${astreinte.jourFerie ? '(inclut jour férié)' : ''}</p>
+                            <p><strong>🚨 Incidents:</strong> ${astreinteIncidents.length}</p>
+                            ${astreinte.notes ? `<p><strong>📝 Notes:</strong> ${astreinte.notes}</p>` : ''}
+                        </div>
+                        <div class="astreinte-actions">
+                            <button class="btn btn-danger" onclick="deleteAstreinte(${astreinte.id})">🗑️ Supprimer</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('astreintesList').innerHTML = html;
+        }
+
+        // Supprimer une astreinte
+        function deleteAstreinte(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette astreinte ?')) {
+                astreintes = astreintes.filter(a => a.id !== id);
+                localStorage.setItem('astreintes', JSON.stringify(astreintes));
+                updateDashboard();
+                updateAstreintesList();
+                updateIncidentAstreinteSelect();
+            }
+        }
+
+        // Afficher le formulaire d'incident
+        function showIncidentForm() {
+            document.getElementById('incidentForm').style.display = 'block';
+            updateIncidentAstreinteSelect();
+        }
+
+        // Masquer le formulaire d'incident
+        function hideIncidentForm() {
+            document.getElementById('incidentForm').style.display = 'none';
+        }
+
+        // Mettre à jour le select des astreintes dans le formulaire d'incident
+        function updateIncidentAstreinteSelect() {
+            const select = document.getElementById('incidentAstreinte');
+            const options = astreintes.map(a => 
+                `<option value="${a.id}">${a.nom} - ${new Date(a.dateDebut).toLocaleDateString('fr-FR')}</option>`
+            ).join('');
+            select.innerHTML = '<option value="">Aucune astreinte associée</option>' + options;
+        }
+
+        // Ajouter un incident
+        function addIncident() {
+            const analyste = document.getElementById('incidentAnalyste').value;
+            const date = document.getElementById('incidentDate').value;
+            const heureDebut = document.getElementById('incidentHeureDebut').value;
+            const heureFin = document.getElementById('incidentHeureFin').value;
+            const title = document.getElementById('incidentTitle').value;
+            const severity = document.getElementById('incidentSeverity').value;
+            const description = document.getElementById('incidentDescription').value;
+            const retex = document.getElementById('incidentRetex').value;
+            const astreinteId = document.getElementById('incidentAstreinte').value;
+            const heures = document.getElementById('incidentHeures').value;
+
+            if (!analyste || !date || !heureDebut || !title) {
+                alert('⚠️ Veuillez remplir tous les champs obligatoires (*)');
+                return;
+            }
+
+            // Récupération des communications depuis la liste déroulante
+            const commSelect = document.getElementById('commSelect');
+            const selectedOptions = Array.from(commSelect.selectedOptions).map(opt => opt.value);
+            
+            const communications = {
+                cadreAstreinte: selectedOptions.includes('cadreAstreinte'),
+                dsi: selectedOptions.includes('dsi'),
+                rssi: selectedOptions.includes('rssi'),
+                anssi: selectedOptions.includes('anssi'),
+                shfds: selectedOptions.includes('shfds'),
+                socRie: selectedOptions.includes('socRie'),
+                soc: selectedOptions.includes('soc'),
+                renater: selectedOptions.includes('renater')
+            };
+
+            const incident = {
+                id: Date.now(),
+                analyste,
+                date,
+                heureDebut,
+                heureFin,
+                title,
+                severity,
+                description,
+                retex,
+                heures: heures ? parseFloat(heures) : 0,
+                communications,
+                astreinteId: astreinteId ? parseInt(astreinteId) : null,
+                resolved: false,
+                createdAt: new Date().toISOString()
+            };
+
+            incidents.push(incident);
+            localStorage.setItem('incidents', JSON.stringify(incidents));
+
+            // Réinitialisation du formulaire
+            document.getElementById('incidentAnalyste').value = '';
+            document.getElementById('incidentDate').value = '';
+            document.getElementById('incidentHeureDebut').value = '';
+            document.getElementById('incidentHeureFin').value = '';
+            document.getElementById('incidentTitle').value = '';
+            document.getElementById('incidentDescription').value = '';
+            document.getElementById('incidentRetex').value = '';
+            document.getElementById('incidentHeures').value = '';
+            commSelect.selectedIndex = -1; // Désélectionner toutes les options
+            
+            hideIncidentForm();
+            updateIncidentsList();
+            updateDashboard();
+            alert('✅ Incident enregistré avec succès !');
+        }
+
+        // Mettre à jour la liste des incidents
+        function updateIncidentsList() {
+            const sortedIncidents = [...incidents].sort((a, b) => 
+                new Date(b.createdAt) - new Date(a.createdAt)
+            );
+
+            if (sortedIncidents.length === 0) {
+                document.getElementById('incidentsList').innerHTML = `
+                    <div class="empty-state">
+                        <p style="font-size: 1.2em;">Aucun incident enregistré</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const severityLabels = {
+                critical: { text: 'Critique', class: 'severity-critical' },
+                high: { text: 'Haute', class: 'severity-high' },
+                medium: { text: 'Moyenne', class: 'severity-medium' },
+                low: { text: 'Basse', class: 'severity-low' },
+                'false-positive': { text: 'Faux-positif', class: 'severity-low' }
+            };
+
+            const html = sortedIncidents.map(incident => {
+                const astreinte = astreintes.find(a => a.id === incident.astreinteId);
+                
+                // Générer la liste des communications
+                let commList = [];
+                if (incident.communications) {
+                    if (incident.communications.cadreAstreinte) commList.push('Cadre d\'astreinte');
+                    if (incident.communications.dsi) commList.push('DSI');
+                    if (incident.communications.rssi) commList.push('RSSI');
+                    if (incident.communications.anssi) commList.push('ANSSI');
+                    if (incident.communications.shfds) commList.push('SHFDS');
+                    if (incident.communications.socRie) commList.push('SOC RIE');
+                    if (incident.communications.soc) commList.push('SOC');
+                    if (incident.communications.renater) commList.push('RENATER');
+                }
+                
+                return `
+                    <div class="incident-item ${incident.resolved ? 'resolved' : ''}">
+                        <div class="incident-header">
+                            <div>
+                                <strong style="font-size: 1.1em;">${incident.title}</strong>
+                                <span class="incident-severity ${severityLabels[incident.severity].class}" style="margin-left: 10px;">
+                                    ${severityLabels[incident.severity].text}
+                                </span>
+                            </div>
+                            <div>
+                                ${incident.resolved ? 
+                                    '<span style="color: #28a745; font-weight: 600;">✅ Résolu</span>' : 
+                                    `<button class="btn btn-success" onclick="resolveIncident(${incident.id})" style="padding: 5px 15px;">✓ Résoudre</button>`
+                                }
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 12px; border-radius: 6px; margin: 10px 0;">
+                            <p style="margin: 5px 0;"><strong>👤 Analyste:</strong> ${incident.analyste || 'Non renseigné'}</p>
+                            <p style="margin: 5px 0;"><strong>📅 Date incident:</strong> ${incident.date ? new Date(incident.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Non renseigné'}</p>
+                            <p style="margin: 5px 0;"><strong>🕐 Horaires:</strong> ${incident.heureDebut || '-'} ${incident.heureFin ? '→ ' + incident.heureFin : ''}</p>
+                            ${incident.heures > 0 ? `<p style="margin: 5px 0;"><strong>⏱️ Temps passé:</strong> ${incident.heures} heure${incident.heures > 1 ? 's' : ''} (avec majoration)</p>` : ''}
+                        </div>
+                        
+                        ${incident.description ? `
+                            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0;">
+                                <strong style="display: block; margin-bottom: 5px;">📝 Description et opérations:</strong>
+                                <p style="color: #666; margin: 0; white-space: pre-wrap;">${incident.description}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${incident.retex ? `
+                            <div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 10px 0;">
+                                <strong style="display: block; margin-bottom: 5px;">💡 Retex / Problèmes:</strong>
+                                <p style="color: #666; margin: 0; white-space: pre-wrap;">${incident.retex}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${commList.length > 0 ? `
+                            <div style="background: #e7f3ff; padding: 12px; border-radius: 6px; margin: 10px 0;">
+                                <strong style="display: block; margin-bottom: 5px;">📢 Communications:</strong>
+                                <p style="margin: 0; color: #666;">${commList.join(', ')}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <p style="font-size: 0.9em; color: #888; margin-top: 10px;">
+                            📝 Enregistré le ${formatDate(incident.createdAt)}
+                            ${astreinte ? ` | 🛡️ ${astreinte.nom}` : ''}
+                        </p>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn btn-primary" onclick="exportIncidentToPDF(${incident.id})" style="padding: 5px 15px;">
+                                📄 Exporter PDF
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteIncident(${incident.id})" style="padding: 5px 15px;">
+                                🗑️ Supprimer
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('incidentsList').innerHTML = html;
+        }
+
+        // Résoudre un incident
+        function resolveIncident(id) {
+            incidents = incidents.map(i => 
+                i.id === id ? {...i, resolved: true, resolvedAt: new Date().toISOString()} : i
+            );
+            localStorage.setItem('incidents', JSON.stringify(incidents));
+            updateIncidentsList();
+            updateDashboard();
+        }
+
+        // Supprimer un incident
+        function deleteIncident(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cet incident ?')) {
+                incidents = incidents.filter(i => i.id !== id);
+                localStorage.setItem('incidents', JSON.stringify(incidents));
+                updateIncidentsList();
+                updateDashboard();
+            }
+        }
+
+        // Afficher le formulaire de récupération
+        function showRecuperationForm() {
+            document.getElementById('recuperationForm').style.display = 'block';
+        }
+
+        // Masquer le formulaire de récupération
+        function hideRecuperationForm() {
+            document.getElementById('recuperationForm').style.display = 'none';
+        }
+
+        // Ajouter une récupération prise
+        function addRecuperation() {
+            const dateDebut = document.getElementById('recuperationDateDebut').value;
+            const dateFin = document.getElementById('recuperationDateFin').value;
+            const jours = document.getElementById('recuperationJours').value;
+            const notes = document.getElementById('recuperationNotes').value;
+
+            if (!dateDebut || !dateFin || !jours) {
+                alert('⚠️ Veuillez remplir tous les champs obligatoires');
+                return;
+            }
+
+            const joursFloat = parseFloat(jours);
+            const disponibles = parseFloat(calculateRecuperationRestante());
+
+            if (joursFloat > disponibles) {
+                alert(`⚠️ Vous n'avez que ${disponibles} jour(s) de récupération disponible(s)`);
+                return;
+            }
+
+            const recuperation = {
+                id: Date.now(),
+                dateDebut,
+                dateFin,
+                jours: joursFloat,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+
+            recuperationsPrises.push(recuperation);
+            localStorage.setItem('recuperationsPrises', JSON.stringify(recuperationsPrises));
+
+            document.getElementById('recuperationDateDebut').value = '';
+            document.getElementById('recuperationDateFin').value = '';
+            document.getElementById('recuperationJours').value = '';
+            document.getElementById('recuperationNotes').value = '';
+            
+            hideRecuperationForm();
+            updateRecuperationView();
+            updateDashboard();
+            alert('✅ Récupération enregistrée avec succès !');
+        }
+
+        // Mettre à jour la vue de récupération
+        function updateRecuperationView() {
+            const total = calculateTotalRecuperation();
+            const pris = calculateTotalRecuperationPrise();
+            const restant = calculateRecuperationRestante();
+
+            document.getElementById('totalRecupDisplay').textContent = total;
+            document.getElementById('prisRecupDisplay').textContent = pris;
+            document.getElementById('restantRecupDisplay').textContent = restant;
+
+            const sortedRecuperations = [...recuperationsPrises].sort((a, b) => 
+                new Date(b.dateDebut) - new Date(a.dateDebut)
+            );
+
+            if (sortedRecuperations.length === 0) {
+                document.getElementById('recuperationList').innerHTML = `
+                    <div class="empty-state">
+                        <p style="font-size: 1.2em;">Aucun jour de récupération pris</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = sortedRecuperations.map(recup => {
+                return `
+                    <div class="astreinte-card">
+                        <div class="astreinte-header">
+                            <div class="astreinte-title">${recup.jours} jour${recup.jours > 1 ? 's' : ''} de récupération</div>
+                            <span class="astreinte-status" style="background: #ffc107; color: #333;">🏖️ Pris</span>
+                        </div>
+                        <div class="astreinte-details">
+                            <p><strong>📅 Du:</strong> ${new Date(recup.dateDebut).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            <p><strong>📅 Au:</strong> ${new Date(recup.dateFin).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            ${recup.notes ? `<p><strong>📝 Notes:</strong> ${recup.notes}</p>` : ''}
+                            <p style="font-size: 0.9em; color: #888; margin-top: 10px;">Enregistré le ${new Date(recup.createdAt).toLocaleDateString('fr-FR')}</p>
+                        </div>
+                        <div class="astreinte-actions">
+                            <button class="btn btn-danger" onclick="deleteRecuperation(${recup.id})">🗑️ Supprimer</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('recuperationList').innerHTML = html;
+        }
+
+        // Supprimer une récupération
+        function deleteRecuperation(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette récupération ?')) {
+                recuperationsPrises = recuperationsPrises.filter(r => r.id !== id);
+                localStorage.setItem('recuperationsPrises', JSON.stringify(recuperationsPrises));
+                updateRecuperationView();
+                updateDashboard();
+            }
+        }
+
+        // Exporter les données
+        function exportData() {
+            const data = {
+                astreintes: astreintes,
+                incidents: incidents,
+                recuperationsPrises: recuperationsPrises,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.download = `astreintes-soc-export-${dateStr}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('✅ Données exportées avec succès !');
+        }
+
+        // Importer les données
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Vérification de la structure des données
+                    if (!data.astreintes || !data.incidents || !data.recuperationsPrises) {
+                        alert('⚠️ Format de fichier invalide');
+                        return;
+                    }
+
+                    // Demander confirmation avant d'écraser les données
+                    const confirmMsg = `Cette action va remplacer toutes vos données actuelles.\n\n` +
+                                      `Données actuelles :\n` +
+                                      `- ${astreintes.length} astreintes\n` +
+                                      `- ${incidents.length} incidents\n` +
+                                      `- ${recuperationsPrises.length} récupérations prises\n\n` +
+                                      `Nouvelles données :\n` +
+                                      `- ${data.astreintes.length} astreintes\n` +
+                                      `- ${data.incidents.length} incidents\n` +
+                                      `- ${data.recuperationsPrises.length} récupérations prises\n\n` +
+                                      `Continuer ?`;
+
+                    if (!confirm(confirmMsg)) {
+                        event.target.value = ''; // Reset input
+                        return;
+                    }
+
+                    // Import des données
+                    astreintes = data.astreintes;
+                    incidents = data.incidents;
+                    recuperationsPrises = data.recuperationsPrises;
+
+                    // Sauvegarde dans localStorage
+                    localStorage.setItem('astreintes', JSON.stringify(astreintes));
+                    localStorage.setItem('incidents', JSON.stringify(incidents));
+                    localStorage.setItem('recuperationsPrises', JSON.stringify(recuperationsPrises));
+
+                    // Mise à jour de l'interface
+                    updateDashboard();
+                    updateAstreintesList();
+                    updateIncidentsList();
+                    updateRecuperationView();
+                    updateIncidentAstreinteSelect();
+
+                    alert('✅ Données importées avec succès !');
+                    event.target.value = ''; // Reset input
+
+                } catch (error) {
+                    alert('❌ Erreur lors de l\'import : fichier JSON invalide');
+                    console.error('Import error:', error);
+                    event.target.value = ''; // Reset input
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        // Export CSV pour Excel
+        function exportToCSV() {
+            // Export des astreintes
+            let csvAstreintes = 'Type,Nom,Date Début,Date Fin,Type Astreinte,Jour Férié,Jours Récupération,Notes\n';
+            astreintes.forEach(a => {
+                const recup = calculateRecuperation(a);
+                csvAstreintes += `Astreinte,"${a.nom}","${a.dateDebut}","${a.dateFin}","${a.type}","${a.jourFerie ? 'Oui' : 'Non'}","${recup}","${(a.notes || '').replace(/"/g, '""')}"\n`;
+            });
+
+            // Export des incidents avec tous les nouveaux champs
+            let csvIncidents = '\n\nType,Analyste,Date Incident,Heure Début,Heure Fin,Titre,Sévérité,Heures,Description,Retex,Communications,Résolu,Astreinte,Date Enregistrement\n';
+            incidents.forEach(i => {
+                const astreinte = astreintes.find(a => a.id === i.astreinteId);
+                let commList = [];
+                if (i.communications) {
+                    if (i.communications.cadreAstreinte) commList.push('Cadre Astreinte');
+                    if (i.communications.dsi) commList.push('DSI');
+                    if (i.communications.rssi) commList.push('RSSI');
+                    if (i.communications.anssi) commList.push('ANSSI');
+                    if (i.communications.shfds) commList.push('SHFDS');
+                    if (i.communications.socRie) commList.push('SOC RIE');
+                    if (i.communications.soc) commList.push('SOC');
+                    if (i.communications.renater) commList.push('RENATER');
+                }
+                csvIncidents += `Incident,"${i.analyste || ''}","${i.date || ''}","${i.heureDebut || ''}","${i.heureFin || ''}","${i.title}","${i.severity}","${i.heures || 0}","${(i.description || '').replace(/"/g, '""')}","${(i.retex || '').replace(/"/g, '""')}","${commList.join('; ')}","${i.resolved ? 'Oui' : 'Non'}","${astreinte ? astreinte.nom : '-'}","${i.createdAt}"\n`;
+            });
+
+            // Export des récupérations
+            let csvRecuperations = '\n\nType,Date Début,Date Fin,Jours,Notes\n';
+            recuperationsPrises.forEach(r => {
+                csvRecuperations += `Récupération,"${r.dateDebut}","${r.dateFin}","${r.jours}","${(r.notes || '').replace(/"/g, '""')}"\n`;
+            });
+
+            const csvContent = csvAstreintes + csvIncidents + csvRecuperations;
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.download = `astreintes-soc-export-${dateStr}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('✅ Export CSV réussi !');
+        }
+
+        // Afficher le menu d'export
+        function showExportMenu() {
+            document.getElementById('exportMenu').style.display = 'block';
+            document.getElementById('settingsMenu').style.display = 'none';
+        }
+
+        // Masquer le menu d'export
+        function hideExportMenu() {
+            document.getElementById('exportMenu').style.display = 'none';
+        }
+
+        // Afficher le menu des paramètres
+        function showSettingsMenu() {
+            document.getElementById('settingsMenu').style.display = 'block';
+            document.getElementById('exportMenu').style.display = 'none';
+            updateSettingsDisplay();
+        }
+
+        // Masquer le menu des paramètres
+        function hideSettingsMenu() {
+            document.getElementById('settingsMenu').style.display = 'none';
+        }
+
+        // Initialiser l'affichage des paramètres
+        function initAutoBackup() {
+            document.getElementById('autoBackupEnabled').checked = autoBackupSettings.enabled;
+            document.getElementById('backupFrequency').value = autoBackupSettings.frequency;
+            document.getElementById('autoBackupOptions').style.display = autoBackupSettings.enabled ? 'block' : 'none';
+            updateLastBackupDisplay();
+            updateAutoBackupIndicator();
+        }
+
+        // Mettre à jour l'indicateur de sauvegarde automatique
+        function updateAutoBackupIndicator() {
+            const indicator = document.getElementById('autoBackupIndicator');
+            if (autoBackupSettings.enabled) {
+                indicator.style.display = 'inline-block';
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Mettre à jour l'affichage des paramètres
+        function updateSettingsDisplay() {
+            document.getElementById('autoBackupEnabled').checked = autoBackupSettings.enabled;
+            document.getElementById('backupFrequency').value = autoBackupSettings.frequency;
+            document.getElementById('autoBackupOptions').style.display = autoBackupSettings.enabled ? 'block' : 'none';
+            updateLastBackupDisplay();
+        }
+
+        // Afficher la date de la dernière sauvegarde
+        function updateLastBackupDisplay() {
+            const lastBackupElement = document.getElementById('lastBackupDate');
+            if (autoBackupSettings.lastBackup) {
+                const date = new Date(autoBackupSettings.lastBackup);
+                lastBackupElement.textContent = date.toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } else {
+                lastBackupElement.textContent = 'Aucune';
+            }
+        }
+
+        // Activer/désactiver la sauvegarde automatique
+        function toggleAutoBackup() {
+            autoBackupSettings.enabled = document.getElementById('autoBackupEnabled').checked;
+            document.getElementById('autoBackupOptions').style.display = autoBackupSettings.enabled ? 'block' : 'none';
+            localStorage.setItem('autoBackupSettings', JSON.stringify(autoBackupSettings));
+            updateAutoBackupIndicator();
+            
+            if (autoBackupSettings.enabled) {
+                alert('✅ Sauvegarde automatique activée !');
+                performAutoBackup(); // Première sauvegarde immédiate
+            } else {
+                alert('⚠️ Sauvegarde automatique désactivée');
+            }
+        }
+
+        // Mettre à jour la fréquence de sauvegarde
+        function updateBackupFrequency() {
+            autoBackupSettings.frequency = document.getElementById('backupFrequency').value;
+            localStorage.setItem('autoBackupSettings', JSON.stringify(autoBackupSettings));
+            
+            const frequencies = {
+                daily: 'quotidienne',
+                weekly: 'hebdomadaire',
+                monthly: 'mensuelle'
+            };
+            alert(`✅ Fréquence mise à jour : ${frequencies[autoBackupSettings.frequency]}`);
+        }
+
+        // Vérifier si une sauvegarde automatique est nécessaire
+        function checkAutoBackup() {
+            if (!autoBackupSettings.enabled) return;
+
+            const now = new Date();
+            const lastBackup = autoBackupSettings.lastBackup ? new Date(autoBackupSettings.lastBackup) : null;
+
+            if (!lastBackup) {
+                // Première sauvegarde
+                performAutoBackup();
+                return;
+            }
+
+            const daysSinceBackup = Math.floor((now - lastBackup) / (1000 * 60 * 60 * 24));
+
+            let shouldBackup = false;
+            switch (autoBackupSettings.frequency) {
+                case 'daily':
+                    shouldBackup = daysSinceBackup >= 1;
+                    break;
+                case 'weekly':
+                    shouldBackup = daysSinceBackup >= 7;
+                    break;
+                case 'monthly':
+                    shouldBackup = daysSinceBackup >= 30;
+                    break;
+            }
+
+            if (shouldBackup) {
+                performAutoBackup();
+            }
+        }
+
+        // Effectuer une sauvegarde automatique
+        function performAutoBackup() {
+            const data = {
+                astreintes: astreintes,
+                incidents: incidents,
+                recuperationsPrises: recuperationsPrises,
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                autoBackup: true
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            
+            // Sauvegarder dans localStorage comme backup
+            localStorage.setItem('autoBackupData', dataStr);
+            
+            // Mettre à jour la date de dernière sauvegarde
+            autoBackupSettings.lastBackup = new Date().toISOString();
+            localStorage.setItem('autoBackupSettings', JSON.stringify(autoBackupSettings));
+            
+            updateLastBackupDisplay();
+            
+            console.log('✅ Sauvegarde automatique effectuée');
+        }
+
+        // Sauvegarde manuelle
+        function manualBackup() {
+            performAutoBackup();
+            
+            // Également télécharger le fichier
+            const data = {
+                astreintes: astreintes,
+                incidents: incidents,
+                recuperationsPrises: recuperationsPrises,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.download = `astreintes-soc-backup-${dateStr}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('✅ Sauvegarde manuelle effectuée et téléchargée !');
+        }
+
+        // Restaurer depuis la sauvegarde automatique
+        function restoreFromAutoBackup() {
+            const backupData = localStorage.getItem('autoBackupData');
+            if (!backupData) {
+                alert('⚠️ Aucune sauvegarde automatique trouvée');
+                return;
+            }
+
+            if (!confirm('Voulez-vous restaurer les données depuis la dernière sauvegarde automatique ? Cela écrasera vos données actuelles.')) {
+                return;
+            }
+
+            try {
+                const data = JSON.parse(backupData);
+                
+                astreintes = data.astreintes;
+                incidents = data.incidents;
+                recuperationsPrises = data.recuperationsPrises;
+
+                localStorage.setItem('astreintes', JSON.stringify(astreintes));
+                localStorage.setItem('incidents', JSON.stringify(incidents));
+                localStorage.setItem('recuperationsPrises', JSON.stringify(recuperationsPrises));
+
+                updateDashboard();
+                updateAstreintesList();
+                updateIncidentsList();
+                updateRecuperationView();
+                updateIncidentAstreinteSelect();
+
+                alert('✅ Données restaurées depuis la sauvegarde automatique !');
+            } catch (error) {
+                alert('❌ Erreur lors de la restauration');
+                console.error('Restore error:', error);
+            }
+        }
+
+        // Exporter un incident en PDF
+        function exportIncidentToPDF(incidentId) {
+            const incident = incidents.find(i => i.id === incidentId);
+            if (!incident) {
+                alert('❌ Incident non trouvé');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const astreinte = astreintes.find(a => a.id === incident.astreinteId);
+
+            // Titre du document
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text('RAPPORT D\'INCIDENT SOC', 105, 20, { align: 'center' });
+
+            // Ligne de séparation
+            doc.setLineWidth(0.5);
+            doc.line(20, 25, 190, 25);
+
+            let yPos = 35;
+
+            // Informations générales
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('INFORMATIONS GENERALES', 20, yPos);
+            yPos += 8;
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+
+            // Analyste
+            doc.setFont(undefined, 'bold');
+            doc.text('Analyste :', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(incident.analyste || 'Non renseigné', 60, yPos);
+            yPos += 7;
+
+            // Date incident
+            doc.setFont(undefined, 'bold');
+            doc.text('Date incident :', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            const dateIncident = incident.date ? new Date(incident.date).toLocaleDateString('fr-FR', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            }) : 'Non renseigné';
+            doc.text(dateIncident, 60, yPos);
+            yPos += 7;
+
+            // Horaires
+            doc.setFont(undefined, 'bold');
+            doc.text('Horaires :', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            const horaires = `${incident.heureDebut || '-'} ${incident.heureFin ? '-> ' + incident.heureFin : ''}`;
+            doc.text(horaires, 60, yPos);
+            yPos += 7;
+
+            // Temps passé
+            if (incident.heures > 0) {
+                doc.setFont(undefined, 'bold');
+                doc.text('Temps passe :', 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(`${incident.heures} heure${incident.heures > 1 ? 's' : ''} (avec majoration 30%)`, 60, yPos);
+                yPos += 7;
+            }
+
+            // Sévérité
+            const severityLabels = {
+                critical: 'Critique',
+                high: 'Haute',
+                medium: 'Moyenne',
+                low: 'Basse',
+                'false-positive': 'Faux-positif'
+            };
+            doc.setFont(undefined, 'bold');
+            doc.text('Severite :', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(severityLabels[incident.severity] || incident.severity, 60, yPos);
+            yPos += 7;
+
+            // Astreinte associée
+            if (astreinte) {
+                doc.setFont(undefined, 'bold');
+                doc.text('Astreinte :', 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(astreinte.nom, 60, yPos);
+                yPos += 10;
+            } else {
+                yPos += 3;
+            }
+
+            // Titre de l'incident
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('INCIDENT', 20, yPos);
+            yPos += 8;
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text('Titre :', 20, yPos);
+            yPos += 6;
+            doc.setFont(undefined, 'normal');
+            const titleLines = doc.splitTextToSize(incident.title, 170);
+            doc.text(titleLines, 20, yPos);
+            yPos += titleLines.length * 5 + 5;
+
+            // Description et opérations
+            if (incident.description) {
+                doc.setFont(undefined, 'bold');
+                doc.text('Description et operations menees :', 20, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                const descLines = doc.splitTextToSize(incident.description, 170);
+                doc.text(descLines, 20, yPos);
+                yPos += descLines.length * 5 + 5;
+            }
+
+            // Vérifier si on doit ajouter une nouvelle page
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Retex / Problèmes
+            if (incident.retex) {
+                doc.setFont(undefined, 'bold');
+                doc.text('Problemes rencontres / Retex :', 20, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                const retexLines = doc.splitTextToSize(incident.retex, 170);
+                doc.text(retexLines, 20, yPos);
+                yPos += retexLines.length * 5 + 5;
+            }
+
+            // Vérifier si on doit ajouter une nouvelle page
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Communications
+            if (incident.communications) {
+                let commList = [];
+                if (incident.communications.cadreAstreinte) commList.push('Cadre d\'astreinte');
+                if (incident.communications.dsi) commList.push('DSI');
+                if (incident.communications.rssi) commList.push('RSSI');
+                if (incident.communications.anssi) commList.push('ANSSI');
+                if (incident.communications.shfds) commList.push('SHFDS');
+                if (incident.communications.socRie) commList.push('SOC RIE');
+                if (incident.communications.soc) commList.push('SOC');
+                if (incident.communications.renater) commList.push('RENATER');
+
+                if (commList.length > 0) {
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('COMMUNICATIONS', 20, yPos);
+                    yPos += 8;
+
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+                    commList.forEach(comm => {
+                        doc.text('- ' + comm, 25, yPos);
+                        yPos += 6;
+                    });
+                }
+            }
+
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'italic');
+                doc.text(`Page ${i} sur ${pageCount}`, 105, 290, { align: 'center' });
+                doc.text(`Genere le ${new Date().toLocaleDateString('fr-FR')} a ${new Date().toLocaleTimeString('fr-FR')}`, 105, 285, { align: 'center' });
+            }
+
+            // Télécharger le PDF
+            const fileName = `incident-${incident.analyste ? incident.analyste.replace(/\s+/g, '_') : 'inconnu'}-${incident.date || new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            alert('✅ PDF généré avec succès !');
+        }
+    </script>
+</body>
+</html>
