@@ -600,11 +600,11 @@
                     </div>
                     <div class="form-group">
                         <label>Date de début *</label>
-                        <input type="datetime-local" id="dateDebut" required>
+                        <input type="date" id="dateDebut" required>
                     </div>
                     <div class="form-group">
                         <label>Date de fin *</label>
-                        <input type="datetime-local" id="dateFin" required>
+                        <input type="date" id="dateFin" required>
                     </div>
                     <div class="form-group">
                         <label>Type d'astreinte</label>
@@ -615,10 +615,12 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="checkbox" id="jourFerie" style="width: auto; margin-right: 10px; cursor: pointer;">
-                            <span>Inclut un jour férié (+0,5 jour de récupération)</span>
-                        </label>
+                        <label>Nombre de jours fériés dans la semaine</label>
+                        <select id="nbJoursFeries">
+                            <option value="0">0 - Aucun jour férié</option>
+                            <option value="1">1 - Un jour férié (+0,5 jour de récupération)</option>
+                            <option value="2">2 - Deux jours fériés (+1 jour de récupération)</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Notes</label>
@@ -704,13 +706,16 @@
         function addAstreinte(event) {
             event.preventDefault();
             
+            // Récupérer le nombre de jours fériés depuis la liste déroulante
+            const nbJoursFeries = parseInt(document.getElementById('nbJoursFeries').value);
+            
             const astreinte = {
                 id: Date.now(),
                 nom: document.getElementById('nom').value,
                 dateDebut: document.getElementById('dateDebut').value,
                 dateFin: document.getElementById('dateFin').value,
                 type: document.getElementById('type').value,
-                jourFerie: document.getElementById('jourFerie').checked,
+                nbJoursFeries: nbJoursFeries,
                 notes: document.getElementById('notes').value,
                 createdAt: new Date().toISOString()
             };
@@ -738,17 +743,19 @@
 
         // Calculer les jours de récupération pour une astreinte
         function calculateRecuperation(astreinte) {
-            const debut = new Date(astreinte.dateDebut);
-            const fin = new Date(astreinte.dateFin);
-            const dureeJours = Math.ceil((fin - debut) / (1000 * 60 * 60 * 24));
+            // Base fixe : 1,5 jours de récupération par astreinte (semaine)
+            let recuperation = 1.5;
             
-            // Base : 1,5 jours par semaine d'astreinte
-            let recuperation = (dureeJours / 7) * 1.5;
-            
-            // Bonus jour férié : +0,5 jour
-            if (astreinte.jourFerie) {
-                recuperation += 0.5;
+            // Bonus jours fériés : 0,5 jour par jour férié
+            // Gestion de la compatibilité avec l'ancien format (jourFerie boolean)
+            let nbJoursFeries = 0;
+            if (astreinte.nbJoursFeries !== undefined) {
+                nbJoursFeries = astreinte.nbJoursFeries;
+            } else if (astreinte.jourFerie === true) {
+                nbJoursFeries = 1; // Ancienne version avec checkbox
             }
+            
+            recuperation += nbJoursFeries * 0.5;
             
             return Math.round(recuperation * 10) / 10; // Arrondi à 1 décimale
         }
@@ -834,6 +841,16 @@
             if (activeAstreinte) {
                 const astreinteIncidents = incidents.filter(i => i.astreinteId === activeAstreinte.id);
                 const recuperation = calculateRecuperation(activeAstreinte);
+                
+                // Déterminer le texte pour les jours fériés
+                let ferieText = '';
+                const nbJoursFeries = activeAstreinte.nbJoursFeries || (activeAstreinte.jourFerie ? 1 : 0);
+                if (nbJoursFeries === 1) {
+                    ferieText = ' (inclut 1 jour férié)';
+                } else if (nbJoursFeries === 2) {
+                    ferieText = ' (inclut 2 jours fériés)';
+                }
+                
                 currentHTML += `
                     <div class="astreinte-card active">
                         <div class="astreinte-header">
@@ -844,7 +861,7 @@
                             <p><strong>📅 Début:</strong> ${formatDate(activeAstreinte.dateDebut)}</p>
                             <p><strong>🏁 Fin:</strong> ${formatDate(activeAstreinte.dateFin)}</p>
                             <p><strong>🏷️ Type:</strong> ${activeAstreinte.type}</p>
-                            <p><strong>🎁 Récupération:</strong> ${recuperation} jour${recuperation > 1 ? 's' : ''} ${activeAstreinte.jourFerie ? '(inclut jour férié)' : ''}</p>
+                            <p><strong>🎁 Récupération:</strong> ${recuperation} jour${recuperation > 1 ? 's' : ''}${ferieText}</p>
                             <p><strong>🚨 Incidents:</strong> ${astreinteIncidents.length} (${astreinteIncidents.filter(i => !i.resolved).length} en cours)</p>
                             ${activeAstreinte.notes ? `<p><strong>📝 Notes:</strong> ${activeAstreinte.notes}</p>` : ''}
                         </div>
@@ -887,6 +904,15 @@
 
                 const astreinteIncidents = incidents.filter(i => i.astreinteId === astreinte.id);
                 const recuperation = calculateRecuperation(astreinte);
+                
+                // Déterminer le texte pour les jours fériés
+                let ferieText = '';
+                const nbJoursFeries = astreinte.nbJoursFeries || (astreinte.jourFerie ? 1 : 0);
+                if (nbJoursFeries === 1) {
+                    ferieText = ' (inclut 1 jour férié)';
+                } else if (nbJoursFeries === 2) {
+                    ferieText = ' (inclut 2 jours fériés)';
+                }
 
                 return `
                     <div class="astreinte-card ${status}">
@@ -898,7 +924,7 @@
                             <p><strong>📅 Début:</strong> ${formatDate(astreinte.dateDebut)}</p>
                             <p><strong>🏁 Fin:</strong> ${formatDate(astreinte.dateFin)}</p>
                             <p><strong>🏷️ Type:</strong> ${astreinte.type}</p>
-                            <p><strong>🎁 Récupération:</strong> ${recuperation} jour${recuperation > 1 ? 's' : ''} ${astreinte.jourFerie ? '(inclut jour férié)' : ''}</p>
+                            <p><strong>🎁 Récupération:</strong> ${recuperation} jour${recuperation > 1 ? 's' : ''}${ferieText}</p>
                             <p><strong>🚨 Incidents:</strong> ${astreinteIncidents.length}</p>
                             ${astreinte.notes ? `<p><strong>📝 Notes:</strong> ${astreinte.notes}</p>` : ''}
                         </div>
@@ -1337,10 +1363,11 @@
         // Export CSV pour Excel
         function exportToCSV() {
             // Export des astreintes
-            let csvAstreintes = 'Type,Nom,Date Début,Date Fin,Type Astreinte,Jour Férié,Jours Récupération,Notes\n';
+            let csvAstreintes = 'Type,Nom,Date Début,Date Fin,Type Astreinte,Nb Jours Fériés,Jours Récupération,Notes\n';
             astreintes.forEach(a => {
                 const recup = calculateRecuperation(a);
-                csvAstreintes += `Astreinte,"${a.nom}","${a.dateDebut}","${a.dateFin}","${a.type}","${a.jourFerie ? 'Oui' : 'Non'}","${recup}","${(a.notes || '').replace(/"/g, '""')}"\n`;
+                const nbJoursFeries = a.nbJoursFeries || (a.jourFerie ? 1 : 0);
+                csvAstreintes += `Astreinte,"${a.nom}","${a.dateDebut}","${a.dateFin}","${a.type}","${nbJoursFeries}","${recup}","${(a.notes || '').replace(/"/g, '""')}"\n`;
             });
 
             // Export des incidents avec tous les nouveaux champs
