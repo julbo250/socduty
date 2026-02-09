@@ -1,0 +1,333 @@
+J'ai créé pour vous une application web complète de gestion d'astreintes SOC avec les fonctionnalités suivantes :
+
+📊 Tableau de bord
+
+Statistiques en temps réel (astreintes totales, à venir, incidents)
+Visualisation de l'astreinte en cours
+Indicateurs visuels colorés
+
+📅 Gestion des Astreintes
+
+Création d'astreintes avec dates de début/fin
+Types d'astreintes (normale, week-end, férié, nuit)
+Statuts automatiques (en cours, à venir, terminée)
+Notes personnalisables
+
+🚨 Gestion des Incidents
+
+Déclaration d'incidents avec niveaux de sévérité (critique, haute, moyenne, basse)
+Association aux astreintes
+Suivi de résolution
+Historique complet
+
+💾 Persistance des données
+L'application utilise le localStorage du navigateur pour sauvegarder automatiquement toutes vos données.
+🎨 Interface moderne
+
+Design responsive et intuitif
+Codes couleurs pour une lecture rapide
+Navigation par onglets
+
+🎁 Calcul automatique des jours de récupération
+
+1,5 jours de récupération par semaine d'astreinte
++0,5 jour supplémentaire si un jour férié est inclus (case à cocher)
+Calcul automatique basé sur la durée de l'astreinte
+
+📊 Nouvelle carte statistique
+
+Affichage du total cumulé de tous vos jours de récupération dans le tableau de bord
+
+✅ Case à cocher
+
+Une case "Inclut un jour férié" lors de la création d'une nouvelle astreinte
+Le bonus de 0,5 jour est automatiquement ajouté si cochée
+
+👁️ Affichage des récupérations
+
+Le nombre de jours de récupération est affiché pour chaque astreinte
+Indication visuelle si un jour férié est inclus
+Visible dans le tableau de bord et la liste des astreintes
+
+Par exemple, une astreinte d'une semaine normale = 1,5 jours de récupération, et si vous cochez la case jour férié, vous obtenez 2,0 jours de récupération au total !
+
+🏖️ Nouvel onglet "Récupération"
+
+Tableau de bord avec 3 compteurs :
+
+Total acquis : tous vos jours de récupération gagnés
+Jours pris : ce que vous avez déjà utilisé
+Disponibles : ce qui vous reste
+
+
+
+➕ Déclaration des jours pris
+
+Formulaire pour enregistrer vos prises de récupération
+Date de début et fin
+Nombre de jours (accepte les demi-journées : 0.5, 1.5, etc.)
+Champ notes optionnel
+Validation automatique : impossible de déclarer plus de jours que disponibles
+
+📊 Mise à jour automatique
+
+Le tableau de bord affiche maintenant les "Jours disponibles" au lieu du total
+Tous les compteurs se mettent à jour automatiquement
+Historique complet de vos prises de récupération
+
+🗑️ Gestion complète
+
+Possibilité de supprimer une déclaration si erreur
+Les compteurs se recalculent instantanément
+
+⏱️ Champ "Heures passées" dans le formulaire d'incident
+
+Champ numérique acceptant les demi-heures (0.5, 1.5, 2.5, etc.)
+Description explicative pour guider l'utilisateur
+Champ optionnel mais très utile pour le suivi
+
+📊 Affichage du temps passé
+
+Les heures sont affichées clairement sur chaque incident avec l'icône ⏱️
+Format lisible : "2 heures" ou "1 heure"
+Mise en évidence avec une couleur distincte
+
+📈 Nouvelle statistique dans le tableau de bord
+
+Carte "Heures sur incidents" qui totalise automatiquement toutes les heures passées
+Couleur orange pour bien se distinguer des autres métriques
+Mise à jour en temps réel
+
+📥 Export en 2 formats
+
+JSON (sauvegarde complète)
+
+Conserve toutes les données avec leur structure
+Parfait pour les sauvegardes et la restauration
+Inclut : astreintes, incidents, récupérations prises
+Nom du fichier : astreintes-soc-export-YYYY-MM-DD.json
+
+
+CSV (pour Excel)
+
+Format tabulaire compatible Excel/LibreOffice
+Sépare les données en 3 sections : astreintes, incidents, récupérations
+Encodage UTF-8 avec BOM pour la compatibilité
+Nom du fichier : astreintes-soc-export-YYYY-MM-DD.csv
+
+📤 Import de données
+
+Importe les fichiers JSON exportés précédemment
+Affiche un récapitulatif avant confirmation
+Vérifie la validité du format
+Met à jour automatiquement toute l'interface
+Protection contre les imports accidentels
+
+🎯 Interface intuitive
+
+Boutons dans le header toujours accessibles
+Menu contextuel pour choisir le format d'export
+Messages de confirmation clairs
+Gestion d'erreurs robuste
+
+Les données sont stockées dans le localStorage du navigateur. Voici les détails techniques :
+📍 Emplacement du stockage
+Les données sont sauvegardées dans 3 clés localStorage :
+
+astreintes - toutes vos astreintes planifiées
+incidents - tous les incidents déclarés
+recuperationsPrises - tous les jours de récupération pris
+
+🔍 Comment accéder aux données
+Vous pouvez visualiser ces données directement dans votre navigateur :
+Chrome / Edge / Brave :
+
+Appuyez sur F12 pour ouvrir les outils développeur
+Allez dans l'onglet Application
+Dans le menu de gauche : Storage → Local Storage
+Cliquez sur l'URL de votre page
+Vous verrez les 3 clés avec toutes vos données en JSON
+
+Firefox :
+
+Appuyez sur F12
+Allez dans l'onglet Stockage
+Stockage local → sélectionnez l'URL
+Vous verrez vos données
+
+Safari :
+
+Activez le menu développeur dans les préférences
+Développement → Afficher l'inspecteur Web
+Onglet Stockage → Stockage local
+
+⚠️ Points importants à savoir
+Avantages :
+
+✅ Données persistantes (restent après fermeture du navigateur)
+✅ Rapide et accessible hors ligne
+✅ Pas besoin de compte ou de serveur
+
+Limitations :
+
+⚠️ Données spécifiques à ce navigateur sur cet ordinateur
+⚠️ Si vous videz le cache/cookies, les données sont perdues
+⚠️ Limite de ~5-10 MB selon le navigateur
+⚠️ Données non synchronisées entre appareils
+
+💡 Recommandations
+
+Exportez régulièrement vos données (bouton "Exporter les données")
+Conservez une sauvegarde JSON sur votre ordinateur ou cloud
+Ne videz pas les données du site dans les paramètres du navigateur
+Si vous changez d'ordinateur, utilisez la fonction Import pour restaurer vos données
+
+Parfait ! J'ai ajouté un système complet de sauvegarde automatique avec les fonctionnalités suivantes :
+💾 Nouveau menu Paramètres
+
+⚙️ Activation/désactivation
+
+    Case à cocher pour activer la sauvegarde automatique
+    Indicateur visuel dans le header quand activé (point vert)
+
+📅 Fréquence personnalisable
+
+    Quotidienne : sauvegarde tous les jours
+    Hebdomadaire : sauvegarde toutes les semaines (par défaut)
+    Mensuelle : sauvegarde tous les 30 jours
+
+📊 Informations de sauvegarde
+
+    Affichage de la date et heure de la dernière sauvegarde
+    Vérification automatique au chargement de la page
+
+🔄 Fonctionnalités de sauvegarde
+
+Sauvegarde automatique
+
+    Se déclenche automatiquement selon la fréquence choisie
+    Sauvegarde dans le localStorage du navigateur
+    Première sauvegarde immédiate lors de l'activation
+    Vérification à chaque visite de l'application
+
+💾 Sauvegarde manuelle
+
+    Bouton "Sauvegarder maintenant"
+    Crée une copie locale ET télécharge un fichier JSON
+    Peut être utilisée à tout moment
+
+🔄 Restauration
+
+    Bouton "Restaurer la sauvegarde auto"
+    Permet de revenir à la dernière sauvegarde automatique
+    Utile en cas de suppression accidentelle
+    Demande confirmation avant écrasement
+
+🎯 Comment ça fonctionne
+
+    Cliquez sur ⚙️ Paramètres
+    Cochez "Activer la sauvegarde automatique"
+    Choisissez votre fréquence
+    L'application sauvegardera automatiquement vos données !
+
+Un indicateur vert apparaît dans le header pour vous rappeler que la sauvegarde auto est active 🟢
+
+Vos données sont maintenant doublement protégées : sauvegarde automatique locale + possibilité d'export manuel !
+
+📋 Nouvelles informations requises
+👤 Nom de l'analyste (obligatoire)
+
+Champ texte pour identifier qui a traité l'incident
+
+📅 Date et horaires
+
+Date de l'incident (obligatoire)
+Heure de début (obligatoire)
+Heure de fin (optionnelle)
+
+⏱️ Calcul automatique avec majoration 30%
+
+Le temps est calculé automatiquement entre début et fin
+Majoration de 30% appliquée automatiquement
+Modifiable manuellement si besoin d'ajuster
+Gère les incidents qui passent minuit
+
+🔍 Sévérité enrichie
+
+Critique
+Haute
+Moyenne
+Basse
+Faux-positif (nouveau)
+
+📝 Descriptions améliorées
+
+"Description et détails des opérations menées" - pour documenter les actions
+"Problèmes rencontrés / Retex" - pour le retour d'expérience
+
+📢 Communication structurée
+Zone dédiée avec cases à cocher :
+
+✅ Cadre d'astreinte
+✅ DSI
+✅ RSSI
+✅ ANSSI
+✅ SHFDS
+✅ SOC RIE
+✅ SOC
+✅ RENATER
+✅ Autre (avec champ de saisie libre qui s'active)
+
+📊 Affichage enrichi
+Chaque incident affiche maintenant :
+
+Carte avec l'analyste, date, horaires
+Temps passé avec majoration
+Descriptions dans des zones colorées
+Communications effectuées listées
+Tout est exportable en CSV avec tous les détails !
+
+✅ Changements effectués
+Avant : Champs datetime-local (date + heure)
+Maintenant : Champs date simples (date uniquement)
+Bénéfices :
+
+✅ Interface plus simple et épurée
+✅ Plus rapide à remplir
+✅ Pas de confusion avec les heures
+✅ Meilleure compatibilité entre navigateurs
+
+⏱️ Nouveau bouton "Récupérer des heures"
+Dans l'onglet 🏖️ Récupération, vous avez maintenant deux boutons :
+
+➕ Déclarer des jours pris (pour les jours de récupération)
+⏱️ Récupérer des heures (nouveau !)
+
+📋 Formulaire de récupération d'heures
+Quand vous cliquez sur "Récupérer des heures", un formulaire s'affiche avec :
+
+Date de récupération *
+Nombre d'heures à récupérer * (avec demi-heures : 0.5, 1.5, etc.)
+Notes (optionnel)
+
+🔢 Calcul automatique
+Le compteur "Heures sur incidents" (dans le tableau de bord) est maintenant calculé ainsi :
+
+Total heures incidents - Heures récupérées = Heures restantes
+
+Exemple :
+
+Total heures sur incidents : 15h
+Heures récupérées : 3h
+Affichage : 12h (heures sur incidents)
+
+✅ Validation
+Le système vérifie que vous ne récupérez pas plus d'heures que disponibles. Si vous tentez de récupérer 10h alors qu'il n'en reste que 5h, un message d'erreur s'affiche.
+📊 Affichage
+Les heures récupérées s'affichent dans l'onglet Récupération avec :
+
+Badge bleu ⏱️ Récupérées
+Date de récupération
+Nombre d'heures
+Notes
+Possibilité de supprimer
