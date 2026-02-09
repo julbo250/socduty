@@ -475,6 +475,7 @@
 
                 <div style="margin-bottom: 20px;">
                     <button class="btn btn-success" onclick="showRecuperationForm()">➕ Déclarer des jours pris</button>
+                    <button class="btn btn-primary" onclick="showRecuperationHeuresForm()" style="margin-left: 10px;">⏱️ Récupérer des heures</button>
                 </div>
 
                 <div id="recuperationForm" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -497,6 +498,25 @@
                     </div>
                     <button class="btn btn-success" onclick="addRecuperation()">Enregistrer</button>
                     <button class="btn" onclick="hideRecuperationForm()" style="background: #6c757d; color: white;">Annuler</button>
+                </div>
+
+                <div id="recuperationHeuresForm" style="display: none; background: #e7f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">Récupération d'heures d'incidents</h3>
+                    <div class="form-group">
+                        <label>Date de récupération *</label>
+                        <input type="date" id="recupHeuresDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre d'heures à récupérer *</label>
+                        <input type="number" id="recupHeuresNombre" step="0.5" min="0.5" required placeholder="Ex: 2.5">
+                        <small style="color: #666; display: block; margin-top: 5px;">Ces heures seront déduites du compteur "Heures sur incidents"</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="recupHeuresNotes" placeholder="Raison de la récupération des heures..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="addRecuperationHeures()">Récupérer les heures</button>
+                    <button class="btn" onclick="hideRecuperationHeuresForm()" style="background: #6c757d; color: white;">Annuler</button>
                 </div>
 
                 <div id="recuperationList"></div>
@@ -637,6 +657,7 @@
         let astreintes = JSON.parse(localStorage.getItem('astreintes')) || [];
         let incidents = JSON.parse(localStorage.getItem('incidents')) || [];
         let recuperationsPrises = JSON.parse(localStorage.getItem('recuperationsPrises')) || [];
+        let heuresRecuperees = JSON.parse(localStorage.getItem('heuresRecuperees')) || [];
         
         // Paramètres de sauvegarde automatique
         let autoBackupSettings = JSON.parse(localStorage.getItem('autoBackupSettings')) || {
@@ -806,7 +827,11 @@
             const upcomingAstreintes = astreintes.filter(a => new Date(a.dateDebut) > now).length;
             const totalIncidents = incidents.length;
             const unresolvedIncidents = incidents.filter(i => !i.resolved).length;
-            const totalHeuresIncidents = incidents.reduce((total, incident) => total + (incident.heures || 0), 0).toFixed(1);
+            
+            // Calcul des heures sur incidents : total - heures récupérées
+            const totalHeuresIncidents = incidents.reduce((total, incident) => total + (incident.heures || 0), 0);
+            const totalHeuresRecuperees = heuresRecuperees.reduce((total, recup) => total + (recup.heures || 0), 0);
+            const heuresIncidentsRestantes = (totalHeuresIncidents - totalHeuresRecuperees).toFixed(1);
 
             const statsHTML = `
                 <div class="stat-card">
@@ -830,7 +855,7 @@
                     <div class="stat-label">Incidents en cours</div>
                 </div>
                 <div class="stat-card" style="background: linear-gradient(135deg, #ff9a56 0%, #ff6a00 100%);">
-                    <div class="stat-value">${totalHeuresIncidents}h</div>
+                    <div class="stat-value">${heuresIncidentsRestantes}h</div>
                     <div class="stat-label">Heures sur incidents</div>
                 </div>
             `;
@@ -1229,34 +1254,66 @@
                 new Date(b.dateDebut) - new Date(a.dateDebut)
             );
 
-            if (sortedRecuperations.length === 0) {
-                document.getElementById('recuperationList').innerHTML = `
-                    <div class="empty-state">
-                        <p style="font-size: 1.2em;">Aucun jour de récupération pris</p>
-                    </div>
-                `;
-                return;
+            const sortedHeuresRecup = [...heuresRecuperees].sort((a, b) => 
+                new Date(b.date) - new Date(a.date)
+            );
+
+            let html = '';
+
+            // Afficher les heures récupérées
+            if (sortedHeuresRecup.length > 0) {
+                html += '<h3 style="margin: 20px 0 15px 0;">Heures récupérées</h3>';
+                sortedHeuresRecup.forEach(recup => {
+                    html += `
+                        <div class="astreinte-card" style="border-left-color: #17a2b8; background: #d1ecf1;">
+                            <div class="astreinte-header">
+                                <div class="astreinte-title">${recup.heures} heure${recup.heures > 1 ? 's' : ''} récupérée${recup.heures > 1 ? 's' : ''}</div>
+                                <span class="astreinte-status" style="background: #17a2b8; color: white;">⏱️ Récupérées</span>
+                            </div>
+                            <div class="astreinte-details">
+                                <p><strong>📅 Date:</strong> ${new Date(recup.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                ${recup.notes ? `<p><strong>📝 Notes:</strong> ${recup.notes}</p>` : ''}
+                                <p style="font-size: 0.9em; color: #888; margin-top: 10px;">Enregistré le ${new Date(recup.createdAt).toLocaleDateString('fr-FR')}</p>
+                            </div>
+                            <div class="astreinte-actions">
+                                <button class="btn btn-danger" onclick="deleteRecuperationHeures(${recup.id})">🗑️ Supprimer</button>
+                            </div>
+                        </div>
+                    `;
+                });
             }
 
-            const html = sortedRecuperations.map(recup => {
-                return `
-                    <div class="astreinte-card">
-                        <div class="astreinte-header">
-                            <div class="astreinte-title">${recup.jours} jour${recup.jours > 1 ? 's' : ''} de récupération</div>
-                            <span class="astreinte-status" style="background: #ffc107; color: #333;">🏖️ Pris</span>
+            // Afficher les jours de récupération pris
+            if (sortedRecuperations.length > 0) {
+                html += '<h3 style="margin: 20px 0 15px 0;">Jours de récupération pris</h3>';
+                sortedRecuperations.forEach(recup => {
+                    html += `
+                        <div class="astreinte-card">
+                            <div class="astreinte-header">
+                                <div class="astreinte-title">${recup.jours} jour${recup.jours > 1 ? 's' : ''} de récupération</div>
+                                <span class="astreinte-status" style="background: #ffc107; color: #333;">🏖️ Pris</span>
+                            </div>
+                            <div class="astreinte-details">
+                                <p><strong>📅 Du:</strong> ${new Date(recup.dateDebut).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                <p><strong>📅 Au:</strong> ${new Date(recup.dateFin).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                ${recup.notes ? `<p><strong>📝 Notes:</strong> ${recup.notes}</p>` : ''}
+                                <p style="font-size: 0.9em; color: #888; margin-top: 10px;">Enregistré le ${new Date(recup.createdAt).toLocaleDateString('fr-FR')}</p>
+                            </div>
+                            <div class="astreinte-actions">
+                                <button class="btn btn-danger" onclick="deleteRecuperation(${recup.id})">🗑️ Supprimer</button>
+                            </div>
                         </div>
-                        <div class="astreinte-details">
-                            <p><strong>📅 Du:</strong> ${new Date(recup.dateDebut).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                            <p><strong>📅 Au:</strong> ${new Date(recup.dateFin).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                            ${recup.notes ? `<p><strong>📝 Notes:</strong> ${recup.notes}</p>` : ''}
-                            <p style="font-size: 0.9em; color: #888; margin-top: 10px;">Enregistré le ${new Date(recup.createdAt).toLocaleDateString('fr-FR')}</p>
-                        </div>
-                        <div class="astreinte-actions">
-                            <button class="btn btn-danger" onclick="deleteRecuperation(${recup.id})">🗑️ Supprimer</button>
-                        </div>
+                    `;
+                });
+            }
+
+            if (sortedHeuresRecup.length === 0 && sortedRecuperations.length === 0) {
+                html = `
+                    <div class="empty-state">
+                        <p style="font-size: 1.2em;">Aucune récupération enregistrée</p>
                     </div>
                 `;
-            }).join('');
+            }
 
             document.getElementById('recuperationList').innerHTML = html;
         }
@@ -1271,12 +1328,78 @@
             }
         }
 
+        // Afficher le formulaire de récupération d'heures
+        function showRecuperationHeuresForm() {
+            document.getElementById('recuperationHeuresForm').style.display = 'block';
+            document.getElementById('recuperationForm').style.display = 'none';
+        }
+
+        // Masquer le formulaire de récupération d'heures
+        function hideRecuperationHeuresForm() {
+            document.getElementById('recuperationHeuresForm').style.display = 'none';
+        }
+
+        // Ajouter une récupération d'heures
+        function addRecuperationHeures() {
+            const date = document.getElementById('recupHeuresDate').value;
+            const heures = document.getElementById('recupHeuresNombre').value;
+            const notes = document.getElementById('recupHeuresNotes').value;
+
+            if (!date || !heures) {
+                alert('⚠️ Veuillez remplir tous les champs obligatoires');
+                return;
+            }
+
+            const heuresFloat = parseFloat(heures);
+            
+            // Vérifier qu'on ne récupère pas plus que le total disponible
+            const totalHeuresIncidents = incidents.reduce((total, incident) => total + (incident.heures || 0), 0);
+            const totalHeuresRecuperees = heuresRecuperees.reduce((total, recup) => total + (recup.heures || 0), 0);
+            const heuresRestantes = totalHeuresIncidents - totalHeuresRecuperees;
+
+            if (heuresFloat > heuresRestantes) {
+                alert(`⚠️ Vous n'avez que ${heuresRestantes.toFixed(1)} heure(s) d'incidents disponibles`);
+                return;
+            }
+
+            const recuperation = {
+                id: Date.now(),
+                date,
+                heures: heuresFloat,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+
+            heuresRecuperees.push(recuperation);
+            localStorage.setItem('heuresRecuperees', JSON.stringify(heuresRecuperees));
+
+            document.getElementById('recupHeuresDate').value = '';
+            document.getElementById('recupHeuresNombre').value = '';
+            document.getElementById('recupHeuresNotes').value = '';
+            
+            hideRecuperationHeuresForm();
+            updateRecuperationView();
+            updateDashboard();
+            alert('✅ Heures récupérées avec succès !');
+        }
+
+        // Supprimer une récupération d'heures
+        function deleteRecuperationHeures(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette récupération d\'heures ?')) {
+                heuresRecuperees = heuresRecuperees.filter(r => r.id !== id);
+                localStorage.setItem('heuresRecuperees', JSON.stringify(heuresRecuperees));
+                updateRecuperationView();
+                updateDashboard();
+            }
+        }
+
         // Exporter les données
         function exportData() {
             const data = {
                 astreintes: astreintes,
                 incidents: incidents,
                 recuperationsPrises: recuperationsPrises,
+                heuresRecuperees: heuresRecuperees,
                 exportDate: new Date().toISOString(),
                 version: '1.0'
             };
@@ -1318,11 +1441,13 @@
                                       `Données actuelles :\n` +
                                       `- ${astreintes.length} astreintes\n` +
                                       `- ${incidents.length} incidents\n` +
-                                      `- ${recuperationsPrises.length} récupérations prises\n\n` +
+                                      `- ${recuperationsPrises.length} récupérations prises\n` +
+                                      `- ${heuresRecuperees.length} heures récupérées\n\n` +
                                       `Nouvelles données :\n` +
                                       `- ${data.astreintes.length} astreintes\n` +
                                       `- ${data.incidents.length} incidents\n` +
-                                      `- ${data.recuperationsPrises.length} récupérations prises\n\n` +
+                                      `- ${data.recuperationsPrises.length} récupérations prises\n` +
+                                      `- ${data.heuresRecuperees ? data.heuresRecuperees.length : 0} heures récupérées\n\n` +
                                       `Continuer ?`;
 
                     if (!confirm(confirmMsg)) {
@@ -1334,11 +1459,13 @@
                     astreintes = data.astreintes;
                     incidents = data.incidents;
                     recuperationsPrises = data.recuperationsPrises;
+                    heuresRecuperees = data.heuresRecuperees || [];
 
                     // Sauvegarde dans localStorage
                     localStorage.setItem('astreintes', JSON.stringify(astreintes));
                     localStorage.setItem('incidents', JSON.stringify(incidents));
                     localStorage.setItem('recuperationsPrises', JSON.stringify(recuperationsPrises));
+                    localStorage.setItem('heuresRecuperees', JSON.stringify(heuresRecuperees));
 
                     // Mise à jour de l'interface
                     updateDashboard();
