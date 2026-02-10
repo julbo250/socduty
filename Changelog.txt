@@ -331,3 +331,68 @@ Date de récupération
 Nombre d'heures
 Notes
 Possibilité de supprimer
+
+✅ 1. Majoration corrigée à 25%
+Ancienne formule : durée × 1,30 (majoration 30%)
+Nouvelle formule : durée × 1,25 (majoration 25%)
+⏰ 2. Format horaire au lieu de décimal
+Avant : Format numérique (ex: 1.3, 2.5)
+Maintenant : Format horaire (ex: 1h18, 2h30)
+Exemples de calcul :
+Intervention de 30 minutes :
+
+Forfait : 1h00 (pas de majoration si < 1h)
+
+Intervention de 1 heure :
+
+1h × 1,25 = 1h15
+
+Intervention de 2 heures :
+
+2h × 1,25 = 2h30
+
+Intervention de 1h30 :
+
+90 min × 1,25 = 112,5 min = 1h53
+
+Affichage dans l'application :
+
+⏱️ Champ de saisie : Format XhYY (ex: 2h30)
+📊 Carte statistique : "Heures sur incidents" en format XhYY
+📋 Liste des incidents : Temps affiché en format XhYY avec mention "avec majoration 25%"
+
+Compatibilité :
+
+Le champ accepte aussi une saisie manuelle au format XhYY
+Les données sont stockées en décimal pour les calculs internes
+Les anciens incidents (format décimal) sont automatiquement convertis à l'affichage
+
+🎫 Nouveau champ "Ticket GLPI (ID)"
+📝 Dans le formulaire :
+
+Positionné juste après "Nom de l'analyste"
+Champ texte pour saisir le numéro du ticket
+Optionnel (pas obligatoire)
+Texte d'aide : "Numéro du ticket GLPI associé à cet incident"
+
+🔗 Lien cliquable dans l'affichage
+Dans la liste des incidents :
+
+Si un ticket GLPI est renseigné, il s'affiche comme :
+
+🎫 Ticket GLPI: #12345 🔗
+Le lien pointe vers : https://tiksoc.insee.fr/front/ticket.form.php?id=12345
+S'ouvre dans un nouvel onglet (target="_blank")
+Style : texte bleu cliquable, en gras
+
+Exemple d'affichage :
+👤 Analyste: Jean Dupont
+🎫 Ticket GLPI: #12345 🔗 (cliquable)
+📅 Date incident: lundi 10 février 2026
+
+📄 Intégration complète
+✅ Export PDF : Le numéro de ticket GLPI est inclus dans le PDF
+✅ Export CSV : Nouvelle colonne "Ticket GLPI" dans l'export
+✅ Sauvegarde : Enregistré dans le localStorage et les exports JSON
+Si aucun ticket n'est renseigné, la ligne n'apparaît simplement pas dans l'affichage (pas de ligne vide).
+
