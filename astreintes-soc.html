@@ -395,7 +395,26 @@
                 </button>
             </div>
             <div id="settingsMenu" style="display: none; margin-top: 15px; background: white; padding: 20px; border-radius: 8px; max-width: 400px; margin-left: auto; margin-right: auto; color: #333;">
-                <h3 style="margin-bottom: 15px; color: #2a5298;">⚙️ Paramètres de sauvegarde</h3>
+                <h3 style="margin-bottom: 15px; color: #2a5298;">⚙️ Paramètres</h3>
+                
+                <!-- Configuration URL ITSM -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2a5298;">
+                    <h4 style="margin-top: 0; margin-bottom: 10px; color: #2a5298;">🔗 Configuration ITSM</h4>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-weight: 600; margin-bottom: 5px; display: block;">URL de base pour les tickets GLPI</label>
+                        <input type="text" id="itsmUrlInput" placeholder="https://glpi.home.lab/front/ticket.form.php?id=" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Cette URL sera utilisée pour générer les liens cliquables vers les tickets GLPI.<br>
+                            Le numéro du ticket sera ajouté automatiquement à la fin de cette URL.
+                        </small>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveItsmUrl()" style="width: 100%; margin-top: 5px;">
+                        💾 Enregistrer l'URL
+                    </button>
+                </div>
+                
+                <!-- Sauvegarde automatique -->
+                <h4 style="margin-bottom: 10px; color: #2a5298;">💾 Sauvegarde automatique</h4>
                 
                 <div style="margin-bottom: 15px;">
                     <label style="display: flex; align-items: center; cursor: pointer; font-weight: 600;">
@@ -449,6 +468,9 @@
             <!-- Astreintes Tab -->
             <div id="astreintes" class="tab-content">
                 <h2 style="margin-bottom: 20px;">Liste des Astreintes</h2>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="exportAstreintesToCSV()">📥 Exporter les astreintes (CSV)</button>
+                </div>
                 <div id="astreintesList"></div>
             </div>
 
@@ -476,6 +498,7 @@
                 <div style="margin-bottom: 20px;">
                     <button class="btn btn-success" onclick="showRecuperationForm()">➕ Déclarer des jours pris</button>
                     <button class="btn btn-primary" onclick="showRecuperationHeuresForm()" style="margin-left: 10px;">⏱️ Récupérer des heures</button>
+                    <button class="btn" onclick="exportRecuperationToCSV()" style="background: #17a2b8; color: white; margin-left: 10px;">📥 Exporter les jours</button>
                 </div>
 
                 <div id="recuperationForm" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -664,6 +687,9 @@
         let incidents = JSON.parse(localStorage.getItem('incidents')) || [];
         let recuperationsPrises = JSON.parse(localStorage.getItem('recuperationsPrises')) || [];
         let heuresRecuperees = JSON.parse(localStorage.getItem('heuresRecuperees')) || [];
+        
+        // URL ITSM configurable
+        let itsmBaseUrl = localStorage.getItem('itsmBaseUrl') || 'https://glpi.home.lab/front/ticket.form.php?id=';
         
         // Paramètres de sauvegarde automatique
         let autoBackupSettings = JSON.parse(localStorage.getItem('autoBackupSettings')) || {
@@ -1163,7 +1189,7 @@
                         
                         <div style="background: white; padding: 12px; border-radius: 6px; margin: 10px 0;">
                             <p style="margin: 5px 0;"><strong>👤 Analyste:</strong> ${incident.analyste || 'Non renseigné'}</p>
-                            ${incident.ticketGLPI ? `<p style="margin: 5px 0;"><strong>🎫 Ticket GLPI:</strong> <a href="https://tiksoc.insee.fr/front/ticket.form.php?id=${incident.ticketGLPI}" target="_blank" rel="noopener noreferrer" style="color: #2a5298; text-decoration: none; font-weight: 600;">#${incident.ticketGLPI} 🔗</a></p>` : ''}
+                            ${incident.ticketGLPI ? `<p style="margin: 5px 0;"><strong>🎫 Ticket GLPI:</strong> <a href="${itsmBaseUrl}${incident.ticketGLPI}" target="_blank" rel="noopener noreferrer" style="color: #2a5298; text-decoration: none; font-weight: 600;">#${incident.ticketGLPI} 🔗</a></p>` : ''}
                             <p style="margin: 5px 0;"><strong>📅 Date incident:</strong> ${incident.date ? new Date(incident.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Non renseigné'}</p>
                             <p style="margin: 5px 0;"><strong>🕐 Horaires:</strong> ${incident.heureDebut || '-'} ${incident.heureFin ? '→ ' + incident.heureFin : ''}</p>
                             ${incident.heures > 0 ? `<p style="margin: 5px 0;"><strong>⏱️ Temps passé:</strong> ${incident.heuresFormatted || formatHeuresMinutes(incident.heures)} (avec majoration 25%)</p>` : ''}
@@ -1579,6 +1605,67 @@
             alert('✅ Export CSV réussi !');
         }
 
+        // Export CSV des astreintes uniquement
+        function exportAstreintesToCSV() {
+            let csv = 'Nom,Date Début,Date Fin,Type Astreinte,Nb Jours Fériés,Jours Récupération,Notes\n';
+            
+            const sortedAstreintes = [...astreintes].sort((a, b) => 
+                new Date(a.dateDebut) - new Date(b.dateDebut)
+            );
+            
+            sortedAstreintes.forEach(a => {
+                const recup = calculateRecuperation(a);
+                const nbJoursFeries = a.nbJoursFeries || (a.jourFerie ? 1 : 0);
+                const dateDebut = new Date(a.dateDebut).toLocaleDateString('fr-FR');
+                const dateFin = new Date(a.dateFin).toLocaleDateString('fr-FR');
+                csv += `"${a.nom}","${dateDebut}","${dateFin}","${a.type}","${nbJoursFeries}","${recup}","${(a.notes || '').replace(/"/g, '""')}"\n`;
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.download = `astreintes-${dateStr}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('✅ Export des astreintes réussi !');
+        }
+
+        // Export CSV des jours de récupération uniquement
+        function exportRecuperationToCSV() {
+            let csv = 'Date Début,Date Fin,Jours,Notes,Date Enregistrement\n';
+            
+            const sortedRecuperations = [...recuperationsPrises].sort((a, b) => 
+                new Date(a.dateDebut) - new Date(b.dateDebut)
+            );
+            
+            sortedRecuperations.forEach(r => {
+                const dateDebut = new Date(r.dateDebut).toLocaleDateString('fr-FR');
+                const dateFin = new Date(r.dateFin).toLocaleDateString('fr-FR');
+                const dateEnreg = new Date(r.createdAt).toLocaleDateString('fr-FR');
+                csv += `"${dateDebut}","${dateFin}","${r.jours}","${(r.notes || '').replace(/"/g, '""')}","${dateEnreg}"\n`;
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.download = `jours-recuperation-${dateStr}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('✅ Export des jours de récupération réussi !');
+        }
+
         // Afficher le menu d'export
         function showExportMenu() {
             document.getElementById('exportMenu').style.display = 'block';
@@ -1594,12 +1681,36 @@
         function showSettingsMenu() {
             document.getElementById('settingsMenu').style.display = 'block';
             document.getElementById('exportMenu').style.display = 'none';
+            
+            // Charger l'URL ITSM actuelle dans le champ
+            document.getElementById('itsmUrlInput').value = itsmBaseUrl;
+            
             updateSettingsDisplay();
         }
 
         // Masquer le menu des paramètres
         function hideSettingsMenu() {
             document.getElementById('settingsMenu').style.display = 'none';
+        }
+
+        // Sauvegarder l'URL ITSM
+        function saveItsmUrl() {
+            const urlInput = document.getElementById('itsmUrlInput').value.trim();
+            
+            if (!urlInput) {
+                alert('⚠️ Veuillez saisir une URL');
+                return;
+            }
+            
+            // Validation basique de l'URL
+            if (!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) {
+                alert('⚠️ L\'URL doit commencer par http:// ou https://');
+                return;
+            }
+            
+            itsmBaseUrl = urlInput;
+            localStorage.setItem('itsmBaseUrl', itsmBaseUrl);
+            alert('✅ URL ITSM enregistrée avec succès !');
         }
 
         // Initialiser l'affichage des paramètres

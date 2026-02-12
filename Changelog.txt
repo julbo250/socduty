@@ -396,3 +396,97 @@ Exemple d'affichage :
 ✅ Sauvegarde : Enregistré dans le localStorage et les exports JSON
 Si aucun ticket n'est renseigné, la ligne n'apparaît simplement pas dans l'affichage (pas de ligne vide).
 
+# v1.17
+#11/02/2026
+
+📥 Export Astreintes
+Onglet "Mes Astreintes" :
+
+Nouveau bouton 📥 Exporter les astreintes (CSV)
+Positionné en haut de la liste, au-dessus des astreintes
+
+Contenu du fichier CSV :
+
+Nom de l'astreinte
+Date de début (format français)
+Date de fin (format français)
+Type d'astreinte
+Nombre de jours fériés
+Jours de récupération calculés
+Notes
+
+Nom du fichier : astreintes-YYYY-MM-DD.csv
+📥 Export Jours de Récupération
+Onglet "🏖️ Récupération" :
+
+Nouveau bouton 📥 Exporter les jours (style bleu)
+Positionné avec les autres boutons d'action
+
+Contenu du fichier CSV :
+
+Date de début (format français)
+Date de fin (format français)
+Nombre de jours
+Notes
+Date d'enregistrement
+
+Nom du fichier : jours-recuperation-YYYY-MM-DD.csv
+⚠️ Important : Seuls les jours de récupération pris sont exportés, pas les heures récupérées (comme demandé).
+✨ Fonctionnalités
+✅ Tri chronologique des données exportées
+✅ Encodage UTF-8 avec BOM pour Excel
+✅ Dates au format français (jj/mm/aaaa)
+✅ Guillemets échappés dans les notes
+✅ Téléchargement instantané
+✅ Message de confirmation après export
+
+⚙️ Nouvelle section dans les Paramètres
+📍 Localisation : Header → ⚙️ Paramètres → Section "🔗 Configuration ITSM"
+🔧 Fonctionnalités :
+
+Champ de configuration
+
+Label : "URL de base pour les tickets GLPI"
+Valeur par défaut : https://tiksoc.insee.fr/front/ticket.form.php?id=
+Placeholder affiche la valeur par défaut
+Champ de texte complet modifiable
+
+
+Validation
+
+Vérifie que l'URL commence par http:// ou https://
+Vérifie que le champ n'est pas vide
+Message d'erreur si validation échoue
+
+
+Sauvegarde
+
+Bouton "💾 Enregistrer l'URL"
+Sauvegarde dans le localStorage
+Message de confirmation "✅ URL ITSM enregistrée avec succès !"
+La nouvelle URL est utilisée immédiatement
+
+
+Utilisation
+
+L'URL configurée est utilisée pour tous les liens vers les tickets GLPI
+Format du lien : [URL_configurée] + [numéro_ticket]
+Exemple : https://tiksoc.insee.fr/front/ticket.form.php?id=12345
+
+
+
+💡 Comment ça marche ?
+Pour l'utilisateur :
+
+Ouvrir les Paramètres (⚙️)
+Modifier l'URL si besoin (par exemple pour un autre ITSM)
+Cliquer sur "💾 Enregistrer l'URL"
+Tous les liens vers les tickets GLPI utiliseront cette nouvelle URL
+
+Exemples d'utilisation :
+
+URL par défaut : https://tiksoc.insee.fr/front/ticket.form.php?id=
+URL alternative : https://autreitsm.exemple.fr/tickets?id=
+URL personnalisée : https://votre-glpi.com/front/ticket.form.php?id=
+
+La configuration est persistante et survit aux rechargements de la page !
