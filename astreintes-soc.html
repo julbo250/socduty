@@ -402,7 +402,7 @@
                     <h4 style="margin-top: 0; margin-bottom: 10px; color: #2a5298;">🔗 Configuration ITSM</h4>
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-weight: 600; margin-bottom: 5px; display: block;">URL de base pour les tickets GLPI</label>
-                        <input type="text" id="itsmUrlInput" placeholder="https://glpi.home.lab/front/ticket.form.php?id=" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                        <input type="text" id="itsmUrlInput" placeholder="https://tiksoc.insee.fr/front/ticket.form.php?id=" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
                         <small style="color: #666; display: block; margin-top: 5px;">
                             Cette URL sera utilisée pour générer les liens cliquables vers les tickets GLPI.<br>
                             Le numéro du ticket sera ajouté automatiquement à la fin de cette URL.
@@ -440,10 +440,35 @@
                 <button class="btn btn-success" onclick="manualBackup()" style="width: 100%; margin-bottom: 8px;">
                     💾 Sauvegarder maintenant
                 </button>
-                <button class="btn" onclick="restoreFromAutoBackup()" style="background: #17a2b8; color: white; width: 100%; margin-bottom: 8px;">
+                <button class="btn" onclick="restoreFromAutoBackup()" style="background: #17a2b8; color: white; width: 100%; margin-bottom: 20px;">
                     🔄 Restaurer la sauvegarde auto
                 </button>
-                <button class="btn" onclick="hideSettingsMenu()" style="background: #6c757d; color: white; width: 100%;">
+                
+                <!-- Notifications -->
+                <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 10px;">
+                    <h4 style="margin-bottom: 10px; color: #2a5298;">🔔 Alertes de récupération</h4>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: 600;">
+                            <input type="checkbox" id="notificationsEnabled" onchange="toggleNotifications()" style="width: auto; margin-right: 10px; cursor: pointer;">
+                            <span>Activer les alertes</span>
+                        </label>
+                        <small style="color: #666; display: block; margin-top: 5px; margin-left: 30px;">
+                            Vous serez alerté si une date limite approche
+                        </small>
+                    </div>
+
+                    <div id="notificationOptions" style="display: none; margin-left: 25px; margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Délai d'alerte :</label>
+                        <select id="notificationDelay" onchange="updateNotificationDelay()" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                            <option value="30" selected>1 mois avant (30 jours)</option>
+                            <option value="60">2 mois avant (60 jours)</option>
+                            <option value="90">3 mois avant (90 jours)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="hideSettingsMenu()" style="background: #6c757d; color: white; width: 100%; margin-top: 15px;">
                     Fermer
                 </button>
             </div>
@@ -499,6 +524,7 @@
                     <button class="btn btn-success" onclick="showRecuperationForm()">➕ Déclarer des jours pris</button>
                     <button class="btn btn-primary" onclick="showRecuperationHeuresForm()" style="margin-left: 10px;">⏱️ Récupérer des heures</button>
                     <button class="btn" onclick="exportRecuperationToCSV()" style="background: #17a2b8; color: white; margin-left: 10px;">📥 Exporter les jours</button>
+                    <button class="btn" onclick="checkNotifications()" style="background: #ff9800; color: white; margin-left: 10px;" title="Vérifier les dates limites proches">🔔 Vérifier alertes</button>
                 </div>
 
                 <div id="recuperationForm" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -649,7 +675,7 @@
                     </div>
                     <div class="form-group">
                         <label>Date de début *</label>
-                        <input type="date" id="dateDebut" required>
+                        <input type="date" id="dateDebut" required onchange="calculateDateLimiteRecup()">
                     </div>
                     <div class="form-group">
                         <label>Date de fin *</label>
@@ -658,9 +684,9 @@
                     <div class="form-group">
                         <label>Type d'astreinte</label>
                         <select id="type">
-                            <option value="normale">Normale</option>
-                            <option value="weekend">Week-end</option>
-                            <option value="nuit">Nuit</option>
+                            <option value="normale">Normale (1,5 jours de récupération)</option>
+                            <option value="weekend">Week-end (1 jour de récupération)</option>
+                            <option value="nuit">Nuit (0,5 jour de récupération)</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -674,6 +700,11 @@
                     <div class="form-group">
                         <label>Notes</label>
                         <textarea id="notes" placeholder="Informations complémentaires..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Date limite de récupération</label>
+                        <input type="date" id="dateLimiteRecup" readonly style="background-color: #f0f0f0; cursor: not-allowed;">
+                        <small style="color: #666; display: block; margin-top: 5px;">Calculée automatiquement : date de début + 1 an</small>
                     </div>
                     <button type="submit" class="btn btn-primary">Enregistrer l'astreinte</button>
                 </form>
@@ -689,13 +720,19 @@
         let heuresRecuperees = JSON.parse(localStorage.getItem('heuresRecuperees')) || [];
         
         // URL ITSM configurable
-        let itsmBaseUrl = localStorage.getItem('itsmBaseUrl') || 'https://glpi.home.lab/front/ticket.form.php?id=';
+        let itsmBaseUrl = localStorage.getItem('itsmBaseUrl') || 'https://tiksoc.insee.fr/front/ticket.form.php?id=';
         
         // Paramètres de sauvegarde automatique
         let autoBackupSettings = JSON.parse(localStorage.getItem('autoBackupSettings')) || {
             enabled: false,
             frequency: 'weekly',
             lastBackup: null
+        };
+        
+        // Paramètres de notification (simple)
+        let notificationSettings = JSON.parse(localStorage.getItem('notificationSettings')) || {
+            enabled: false,
+            delayDays: 30
         };
 
         // Initialisation
@@ -715,6 +752,26 @@
             const heures = Math.floor(heuresDecimal);
             const minutes = Math.round((heuresDecimal - heures) * 60);
             return `${heures}h${minutes.toString().padStart(2, '0')}`;
+        }
+
+        // Calculer la date limite de récupération (date de début + 1 an)
+        function calculateDateLimiteRecup() {
+            const dateDebut = document.getElementById('dateDebut').value;
+            if (!dateDebut) {
+                document.getElementById('dateLimiteRecup').value = '';
+                return;
+            }
+            
+            const date = new Date(dateDebut);
+            // Ajouter 1 an
+            date.setFullYear(date.getFullYear() + 1);
+            
+            // Formater la date au format YYYY-MM-DD pour l'input date
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            document.getElementById('dateLimiteRecup').value = `${year}-${month}-${day}`;
         }
 
         // Calculer les heures avec majoration de 25%
@@ -777,6 +834,7 @@
             
             // Récupérer le nombre de jours fériés depuis la liste déroulante
             const nbJoursFeries = parseInt(document.getElementById('nbJoursFeries').value);
+            const dateLimiteRecup = document.getElementById('dateLimiteRecup').value;
             
             const astreinte = {
                 id: Date.now(),
@@ -786,6 +844,7 @@
                 type: document.getElementById('type').value,
                 nbJoursFeries: nbJoursFeries,
                 notes: document.getElementById('notes').value,
+                dateLimiteRecup: dateLimiteRecup,
                 createdAt: new Date().toISOString()
             };
 
@@ -793,6 +852,7 @@
             localStorage.setItem('astreintes', JSON.stringify(astreintes));
 
             event.target.reset();
+            document.getElementById('dateLimiteRecup').value = ''; // Réinitialiser aussi ce champ
             alert('✅ Astreinte enregistrée avec succès !');
             updateDashboard();
             updateAstreintesList();
@@ -812,8 +872,22 @@
 
         // Calculer les jours de récupération pour une astreinte
         function calculateRecuperation(astreinte) {
-            // Base fixe : 1,5 jours de récupération par astreinte (semaine)
-            let recuperation = 1.5;
+            // Base fixe selon le type d'astreinte
+            let recuperation = 0;
+            
+            switch(astreinte.type) {
+                case 'normale':
+                    recuperation = 1.5;
+                    break;
+                case 'weekend':
+                    recuperation = 1.0;
+                    break;
+                case 'nuit':
+                    recuperation = 0.5;
+                    break;
+                default:
+                    recuperation = 1.5; // Par défaut, comme normale
+            }
             
             // Bonus jours fériés : 0,5 jour par jour férié
             // Gestion de la compatibilité avec l'ancien format (jourFerie boolean)
@@ -831,8 +905,14 @@
 
         // Calculer le total des jours de récupération
         function calculateTotalRecuperation() {
+            const now = new Date();
             return astreintes.reduce((total, astreinte) => {
-                return total + calculateRecuperation(astreinte);
+                // Ne compter que les astreintes terminées (date de fin < date actuelle)
+                const fin = new Date(astreinte.dateFin);
+                if (fin < now) {
+                    return total + calculateRecuperation(astreinte);
+                }
+                return total;
             }, 0).toFixed(1);
         }
 
@@ -873,6 +953,13 @@
             });
 
             const upcomingAstreintes = astreintes.filter(a => new Date(a.dateDebut) > now).length;
+            
+            // Compter uniquement les astreintes terminées (date de fin <= date actuelle)
+            const astreintesTerminees = astreintes.filter(a => {
+                const fin = new Date(a.dateFin);
+                return fin < now;
+            }).length;
+            
             const totalIncidents = incidents.length;
             const unresolvedIncidents = incidents.filter(i => !i.resolved).length;
             
@@ -884,8 +971,8 @@
 
             const statsHTML = `
                 <div class="stat-card">
-                    <div class="stat-value">${astreintes.length}</div>
-                    <div class="stat-label">Astreintes totales</div>
+                    <div class="stat-value">${astreintesTerminees}</div>
+                    <div class="stat-label">Astreintes terminées</div>
                 </div>
                 <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                     <div class="stat-value">${upcomingAstreintes}</div>
@@ -936,6 +1023,7 @@
                             <p><strong>🏁 Fin:</strong> ${formatDate(activeAstreinte.dateFin)}</p>
                             <p><strong>🏷️ Type:</strong> ${activeAstreinte.type}</p>
                             <p><strong>🎁 Récupération:</strong> ${recuperation} jour${recuperation > 1 ? 's' : ''}${ferieText}</p>
+                            ${activeAstreinte.dateLimiteRecup ? `<p><strong>⏰ Date limite récup:</strong> ${formatDate(activeAstreinte.dateLimiteRecup)}</p>` : ''}
                             <p><strong>🚨 Incidents:</strong> ${astreinteIncidents.length} (${astreinteIncidents.filter(i => !i.resolved).length} en cours)</p>
                             ${activeAstreinte.notes ? `<p><strong>📝 Notes:</strong> ${activeAstreinte.notes}</p>` : ''}
                         </div>
@@ -999,6 +1087,7 @@
                             <p><strong>🏁 Fin:</strong> ${formatDate(astreinte.dateFin)}</p>
                             <p><strong>🏷️ Type:</strong> ${astreinte.type}</p>
                             <p><strong>🎁 Récupération:</strong> ${recuperation} jour${recuperation > 1 ? 's' : ''}${ferieText}</p>
+                            ${astreinte.dateLimiteRecup ? `<p><strong>⏰ Date limite récup:</strong> ${formatDate(astreinte.dateLimiteRecup)}</p>` : ''}
                             <p><strong>🚨 Incidents:</strong> ${astreinteIncidents.length}</p>
                             ${astreinte.notes ? `<p><strong>📝 Notes:</strong> ${astreinte.notes}</p>` : ''}
                         </div>
@@ -1558,11 +1647,12 @@
         // Export CSV pour Excel
         function exportToCSV() {
             // Export des astreintes
-            let csvAstreintes = 'Type,Nom,Date Début,Date Fin,Type Astreinte,Nb Jours Fériés,Jours Récupération,Notes\n';
+            let csvAstreintes = 'Type,Nom,Date Début,Date Fin,Type Astreinte,Nb Jours Fériés,Jours Récupération,Date Limite Récup,Notes\n';
             astreintes.forEach(a => {
                 const recup = calculateRecuperation(a);
                 const nbJoursFeries = a.nbJoursFeries || (a.jourFerie ? 1 : 0);
-                csvAstreintes += `Astreinte,"${a.nom}","${a.dateDebut}","${a.dateFin}","${a.type}","${nbJoursFeries}","${recup}","${(a.notes || '').replace(/"/g, '""')}"\n`;
+                const dateLimite = a.dateLimiteRecup || '';
+                csvAstreintes += `Astreinte,"${a.nom}","${a.dateDebut}","${a.dateFin}","${a.type}","${nbJoursFeries}","${recup}","${dateLimite}","${(a.notes || '').replace(/"/g, '""')}"\n`;
             });
 
             // Export des incidents avec tous les nouveaux champs
@@ -1607,7 +1697,7 @@
 
         // Export CSV des astreintes uniquement
         function exportAstreintesToCSV() {
-            let csv = 'Nom,Date Début,Date Fin,Type Astreinte,Nb Jours Fériés,Jours Récupération,Notes\n';
+            let csv = 'Nom,Date Début,Date Fin,Type Astreinte,Nb Jours Fériés,Jours Récupération,Date Limite Récup,Notes\n';
             
             const sortedAstreintes = [...astreintes].sort((a, b) => 
                 new Date(a.dateDebut) - new Date(b.dateDebut)
@@ -1618,7 +1708,8 @@
                 const nbJoursFeries = a.nbJoursFeries || (a.jourFerie ? 1 : 0);
                 const dateDebut = new Date(a.dateDebut).toLocaleDateString('fr-FR');
                 const dateFin = new Date(a.dateFin).toLocaleDateString('fr-FR');
-                csv += `"${a.nom}","${dateDebut}","${dateFin}","${a.type}","${nbJoursFeries}","${recup}","${(a.notes || '').replace(/"/g, '""')}"\n`;
+                const dateLimite = a.dateLimiteRecup ? new Date(a.dateLimiteRecup).toLocaleDateString('fr-FR') : '-';
+                csv += `"${a.nom}","${dateDebut}","${dateFin}","${a.type}","${nbJoursFeries}","${recup}","${dateLimite}","${(a.notes || '').replace(/"/g, '""')}"\n`;
             });
 
             const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -1685,6 +1776,11 @@
             // Charger l'URL ITSM actuelle dans le champ
             document.getElementById('itsmUrlInput').value = itsmBaseUrl;
             
+            // Charger l'état des notifications
+            document.getElementById('notificationsEnabled').checked = notificationSettings.enabled;
+            document.getElementById('notificationDelay').value = notificationSettings.delayDays;
+            document.getElementById('notificationOptions').style.display = notificationSettings.enabled ? 'block' : 'none';
+            
             updateSettingsDisplay();
         }
 
@@ -1711,6 +1807,83 @@
             itsmBaseUrl = urlInput;
             localStorage.setItem('itsmBaseUrl', itsmBaseUrl);
             alert('✅ URL ITSM enregistrée avec succès !');
+        }
+
+        // Activer/désactiver les notifications (simple)
+        function toggleNotifications() {
+            notificationSettings.enabled = document.getElementById('notificationsEnabled').checked;
+            
+            if (notificationSettings.enabled) {
+                // Vérifier si le navigateur supporte les notifications
+                if (!('Notification' in window)) {
+                    alert('⚠️ Votre navigateur ne supporte pas les notifications.');
+                    document.getElementById('notificationsEnabled').checked = false;
+                    notificationSettings.enabled = false;
+                    return;
+                }
+                
+                // Demander la permission si nécessaire
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            document.getElementById('notificationOptions').style.display = 'block';
+                            localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+                        } else {
+                            document.getElementById('notificationsEnabled').checked = false;
+                            notificationSettings.enabled = false;
+                            alert('⚠️ Permission refusée. Autorisez les notifications dans votre navigateur.');
+                        }
+                    });
+                } else if (Notification.permission === 'granted') {
+                    document.getElementById('notificationOptions').style.display = 'block';
+                    localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+                } else {
+                    document.getElementById('notificationsEnabled').checked = false;
+                    notificationSettings.enabled = false;
+                    alert('⚠️ Notifications bloquées. Modifiez les paramètres de votre navigateur.');
+                }
+            } else {
+                document.getElementById('notificationOptions').style.display = 'none';
+                localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+            }
+        }
+
+        // Mettre à jour le délai de notification
+        function updateNotificationDelay() {
+            notificationSettings.delayDays = parseInt(document.getElementById('notificationDelay').value);
+            localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+        }
+
+        // Vérifier les dates limites (fonction simple)
+        function checkNotifications() {
+            // Ne rien faire si pas activé ou pas de permission
+            if (!notificationSettings.enabled) return;
+            if (!('Notification' in window)) return;
+            if (Notification.permission !== 'granted') return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            astreintes.forEach(astreinte => {
+                if (!astreinte.dateLimiteRecup) return;
+
+                const dateLimite = new Date(astreinte.dateLimiteRecup);
+                dateLimite.setHours(0, 0, 0, 0);
+                
+                // Calculer les jours restants
+                const daysRemaining = Math.ceil((dateLimite - today) / (24 * 60 * 60 * 1000));
+                
+                // Vérifier si on est dans le délai d'alerte
+                if (daysRemaining > 0 && daysRemaining <= notificationSettings.delayDays) {
+                    const recuperation = calculateRecuperation(astreinte);
+                    
+                    new Notification('⚠️ Date limite proche !', {
+                        body: `Astreinte "${astreinte.nom}"\n${recuperation} jour(s) à utiliser avant le ${dateLimite.toLocaleDateString('fr-FR')}\n(${daysRemaining} jour(s) restant(s))`,
+                        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">🔔</text></svg>',
+                        requireInteraction: false
+                    });
+                }
+            });
         }
 
         // Initialiser l'affichage des paramètres

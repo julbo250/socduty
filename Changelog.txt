@@ -381,7 +381,7 @@ Dans la liste des incidents :
 Si un ticket GLPI est renseigné, il s'affiche comme :
 
 🎫 Ticket GLPI: #12345 🔗
-Le lien pointe vers : https://tiksoc.insee.fr/front/ticket.form.php?id=12345
+Le lien pointe vers : https://tiksoc.corporate.fr/front/ticket.form.php?id=12345
 S'ouvre dans un nouvel onglet (target="_blank")
 Style : texte bleu cliquable, en gras
 
@@ -447,7 +447,7 @@ Nom du fichier : jours-recuperation-YYYY-MM-DD.csv
 Champ de configuration
 
 Label : "URL de base pour les tickets GLPI"
-Valeur par défaut : https://tiksoc.insee.fr/front/ticket.form.php?id=
+Valeur par défaut : https://tiksoc.corporate.fr/front/ticket.form.php?id=
 Placeholder affiche la valeur par défaut
 Champ de texte complet modifiable
 
@@ -471,7 +471,7 @@ Utilisation
 
 L'URL configurée est utilisée pour tous les liens vers les tickets GLPI
 Format du lien : [URL_configurée] + [numéro_ticket]
-Exemple : https://itsm.local.fr/front/ticket.form.php?id=12345
+Exemple : https://tiksoc.corporate.fr/front/ticket.form.php?id=12345
 
 
 
@@ -485,9 +485,224 @@ Tous les liens vers les tickets GLPI utiliseront cette nouvelle URL
 
 Exemples d'utilisation :
 
-URL par défaut : https://itsm.local.fr/front/ticket.form.php?id=
+URL par défaut : https://tiksoc.corporate.fr/front/ticket.form.php?id=
 URL alternative : https://autreitsm.exemple.fr/tickets?id=
 URL personnalisée : https://votre-glpi.com/front/ticket.form.php?id=
 
 La configuration est persistante et survit aux rechargements de la page !
+
+📅 Nouveau champ : Date limite de récupération
+📝 Dans le formulaire "Nouvelle Astreinte"
+Position : Après le champ "Notes", avant le bouton "Enregistrer"
+Caractéristiques :
+
+Champ de type date en lecture seule (grisé)
+Icône : ⏰
+Texte d'aide : "Calculée automatiquement : date de début + 1 an"
+Non modifiable manuellement (calculé automatiquement)
+
+⚙️ Calcul automatique
+Dès que l'utilisateur sélectionne une Date de début, la date limite est calculée :
+Exemples :
+
+Date de début : 02/05/2026 → Date limite : 02/05/2027
+Date de début : 15/01/2026 → Date limite : 15/01/2027
+Date de début : 29/02/2024 (année bissextile) → Date limite : 28/02/2025
+
+👁️ Affichage
+1. Tableau de bord (astreinte en cours) :
+📅 Début: lundi 5 mai 2026
+🏁 Fin: lundi 12 mai 2026
+🏷️ Type: normale
+🎁 Récupération: 1,5 jours
+⏰ Date limite récup: lundi 5 mai 2027  ← NOUVEAU
+🚨 Incidents: 2 (1 en cours)
+
+2. Liste "Mes Astreintes" :
+Même affichage avec la date limite visible pour chaque astreinte
+3. Export CSV :
+
+Nouvelle colonne "Date Limite Récup" ajoutée
+Présente dans l'export complet ET l'export spécifique des astreintes
+Format de date français (jj/mm/aaaa)
+
+💾 Sauvegarde
+
+La date limite est enregistrée dans le localStorage
+Compatible avec les imports/exports JSON
+Rétrocompatible : les anciennes astreintes sans date limite s'afficheront correctement
+
+🔄 Comportement
+
+Si l'utilisateur change la date de début, la date limite se recalcule automatiquement
+Le champ est réinitialisé quand le formulaire est soumis
+Si pas de date limite (anciennes astreintes), la ligne ne s'affiche pas
+
+📊 Nouveau calcul de récupération par type
+Formule mise à jour :
+Base (selon le type) + Bonus jours fériés
+
+Type d'astreinte	Base		+ 1 jour férié		+ 2 jours fériés
+Normale			1,5 		jours2,0 		jours2,5 jours	
+Week-end		1,0 jour	1,5 jours		2,0 jours
+Nuit			0,5 jour	1,0 jour		1,5 jours
+
+💡 Exemples concrets :
+Astreinte Normale :
+
+Sans jour férié : 1,5 jours
+Avec 1 jour férié : 1,5 + 0,5 = 2,0 jours
+Avec 2 jours fériés : 1,5 + 1,0 = 2,5 jours
+
+Astreinte Week-end :
+
+Sans jour férié : 1,0 jour
+Avec 1 jour férié : 1,0 + 0,5 = 1,5 jours
+Avec 2 jours fériés : 1,0 + 1,0 = 2,0 jours
+
+Astreinte Nuit :
+
+Sans jour férié : 0,5 jour
+Avec 1 jour férié : 0,5 + 0,5 = 1,0 jour
+Avec 2 jours fériés : 0,5 + 1,0 = 1,5 jours
+
+🎨 Interface améliorée
+Le sélecteur de type affiche maintenant directement les jours de récupération :
+
+✅ Normale (1,5 jours de récupération)
+✅ Week-end (1 jour de récupération)
+✅ Nuit (0,5 jour de récupération)
+
+✨ Fonctionnalités
+
+✅ Calcul automatique dès la sélection du type
+✅ Affichage mis à jour dans le tableau de bord
+✅ Affichage mis à jour dans la liste des astreintes
+✅ Compteur "Total acquis" et "Disponibles" recalculé correctement
+✅ Export CSV avec les bonnes valeurs
+✅ Rétrocompatible avec les anciennes astreintes
+
+🚀 Fonctionnement MANUEL (sans automatisme)
+Bouton "🔔 Vérifier alertes" dans l'onglet Récupération :
+
+Clique sur ce bouton quand vous voulez vérifier
+Vérifie toutes les dates limites
+Affiche les notifications pour celles qui sont proches
+
+💡 Avantages de cette approche
+✅ Aucun automatisme - Pas de vérification au chargement
+✅ Contrôle total - Vous décidez quand vérifier
+✅ Pas de bug - Code simple et robuste
+✅ Compatible Firefox - Testé pour Firefox
+✅ Léger - Aucun impact sur les performances
+📱 Exemple d'utilisation
+Scénario :
+
+1. Vous ouvrez l'application
+2. Allez dans Paramètres
+3. Activez "Activer les alertes" (permission demandée)
+4. Fermez les paramètres
+5. Allez dans 🏖️ Récupération
+6. Cliquez sur 🔔 Vérifier alertes
+7. Si une date limite approche → notification s'affiche !
+
+🔔 Notification affichée
+⚠️ Date limite proche !
+
+Astreinte "Semaine 6"
+1,5 jour(s) à utiliser avant le 15/02/2027
+(25 jour(s) restant(s))
+
+✨ Points clés
+
+🎯 Simple et efficace
+🖱️ Déclenchement manuel (bouton)
+🔧 Aucune interférence avec l'application
+🚫 Aucune vérification automatique au chargement
+✅ Fonctionne parfaitement sur Firefox
+
+📊 Modification implémentée
+Changements apportés :
+1. Nouveau calcul du compteur
+
+Avant : "Astreintes totales" = toutes les astreintes (passées + en cours + futures)
+Maintenant : "Astreintes terminées" = uniquement les astreintes dont la date de fin est passée
+
+2. Nouveau libellé
+
+Le compteur s'appelle maintenant "Astreintes terminées" au lieu de "Astreintes totales"
+Plus précis et plus clair
+
+Impact sur le tableau de bord :
+Les 6 cartes affichent maintenant :
+
+1. Astreintes terminées ← Nouveau calcul
+2. À venir
+3. Jours disponibles
+4. Incidents totaux
+5. Incidents en cours
+6. Heures sur incidents
+
+Avantages :
+✅ Vision claire de l'historique réel
+✅ Astreintes planifiées ne comptent pas avant d'être terminées
+✅ Cohérence : on compte ce qui est effectivement accompli
+✅ Évite la confusion entre astreintes prévues et réalisées
+
+📊 Modification appliquée : Jours disponibles
+Changement implémenté :
+Fonction calculateTotalRecuperation() modifiée :
+
+Avant : Compte les jours de TOUTES les astreintes (passées + en cours + futures)
+Maintenant : Compte uniquement les jours des astreintes TERMINÉES (date de fin < date actuelle)
+
+Logique appliquée :
+Total acquis = Σ jours de récupération des astreintes où date_fin < date_actuelle
+Jours disponibles = Total acquis - Jours pris
+```
+
+### **Exemple concret :**
+
+**Aujourd'hui : 16/02/2026**
+
+| Astreinte | Date fin | Type | Récupération | Comptée ? |
+|-----------|----------|------|--------------|-----------|
+| Semaine 1 | 08/02/2026 | Normale | 1,5 jours | ✅ Oui (terminée) |
+| Semaine 2 | 15/02/2026 | Week-end | 1,0 jour | ✅ Oui (terminée hier) |
+| Semaine 3 | 22/02/2026 | Normale | 1,5 jours | ❌ Non (en cours) |
+| Semaine 4 | 01/03/2026 | Nuit | 0,5 jour | ❌ Non (future) |
+
+**Calcul :**
+- Total acquis = 1,5 + 1,0 = **2,5 jours** (seulement les 2 premières)
+- Jours pris = 0,5 jour
+- **Jours disponibles = 2,0 jours**
+
+### **Impact sur l'interface :**
+
+**Tableau de bord :**
+```
+┌───────────────────────────────────────────┐
+│ Astreintes terminées : 2                  │
+│ À venir : 2                               │
+│ Jours disponibles : 2,0  ← Mis à jour !  │
+└───────────────────────────────────────────┘
+```
+
+**Onglet Récupération :**
+```
+┌─────────────────────────────────────────┐
+│ Total acquis : 2,5 jours ← Mis à jour ! │
+│ Jours pris : 0,5 jour                   │
+│ Disponibles : 2,0 jours ← Cohérent !    │
+└─────────────────────────────────────────┘
+Cohérence du système :
+✅ Astreintes terminées = 2
+✅ Jours acquis = issus de ces 2 astreintes terminées uniquement
+✅ Jours disponibles = calculés sur la base des astreintes terminées
+✅ Logique cohérente : on ne peut pas utiliser des jours d'une astreinte pas encore terminée
+Avantages :
+✅ Évite de déclarer des récupérations avant que l'astreinte soit terminée
+✅ Cohérence totale entre les compteurs
+✅ Vision réaliste des jours effectivement acquis
+✅ Prévient les erreurs de comptabilité
 
