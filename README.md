@@ -1,4 +1,4 @@
-# socduty
+# SOCDuty
 application de gestion des astreintes
 
 <img width="1271" height="693" alt="Capture d’écran 2026-02-07 à 09 37 39" src="https://github.com/user-attachments/assets/88dea6bd-93e4-4aeb-aa33-e45097a2bb9c" />
