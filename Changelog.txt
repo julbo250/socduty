@@ -471,7 +471,7 @@ Utilisation
 
 L'URL configurée est utilisée pour tous les liens vers les tickets GLPI
 Format du lien : [URL_configurée] + [numéro_ticket]
-Exemple : https://tiksoc.insee.fr/front/ticket.form.php?id=12345
+Exemple : https://itsm.local.fr/front/ticket.form.php?id=12345
 
 
 
@@ -485,8 +485,9 @@ Tous les liens vers les tickets GLPI utiliseront cette nouvelle URL
 
 Exemples d'utilisation :
 
-URL par défaut : https://tiksoc.insee.fr/front/ticket.form.php?id=
+URL par défaut : https://itsm.local.fr/front/ticket.form.php?id=
 URL alternative : https://autreitsm.exemple.fr/tickets?id=
 URL personnalisée : https://votre-glpi.com/front/ticket.form.php?id=
 
 La configuration est persistante et survit aux rechargements de la page !
+
