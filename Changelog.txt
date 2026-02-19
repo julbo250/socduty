@@ -34,7 +34,7 @@ Navigation par onglets
 +0,5 jour supplémentaire si un jour férié est inclus (case à cocher)
 Calcul automatique basé sur la durée de l'astreinte
 
-📊 Nouvelle carte statistique
+📊 Nouvelle carte statistique 
 
 Affichage du total cumulé de tous vos jours de récupération dans le tableau de bord
 
@@ -705,4 +705,5 @@ Avantages :
 ✅ Cohérence totale entre les compteurs
 ✅ Vision réaliste des jours effectivement acquis
 ✅ Prévient les erreurs de comptabilité
+
 
